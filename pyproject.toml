@@ -1,0 +1,10 @@
+﻿[project]
+name = "apitest"
+version = "0.1.0"
+description = "一个遵循分层依赖规范的 AI API 接口测试工具"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[tool.uv]
+package = false

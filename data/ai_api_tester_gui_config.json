@@ -1,0 +1,9 @@
+{
+  "base_url": "https://api.deepseek.com",
+  "api_key": "sk-825d559ecd3848e68fe52a1721a7f703",
+  "history_path": "",
+  "timeout_seconds": "60",
+  "max_tokens": "1024",
+  "system_prompt": "",
+  "default_model": "deepseek-chat"
+}
