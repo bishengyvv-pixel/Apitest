@@ -4,11 +4,15 @@ import tempfile
 import unittest
 
 from packages.ai_api_tester.adaptor.impl.api_gateway import (
+    UpstreamServiceError,
+    _build_upstream_http_error,
+    _parse_stream_events,
     build_runtime,
     extract_assistant_text,
 )
 from packages.ai_api_tester.adaptor.impl.history_store import append_record
 from packages.ai_api_tester.product.impl.service import get_statistics
+from packages.ai_api_tester.shell.requirements import URL_ERROR
 
 
 class AiApiTesterTests(unittest.TestCase):
@@ -29,6 +33,12 @@ class AiApiTesterTests(unittest.TestCase):
         self.assertEqual(runtime["api_key"], "test-key")
         self.assertEqual(runtime["timeout_seconds"], 12)
         self.assertEqual(runtime["max_tokens"], 256)
+        self.assertEqual(runtime["user_agent"], "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36")
+
+    def test_build_runtime_accepts_custom_user_agent(self):
+        """可通过配置覆盖默认客户端标识。"""
+        runtime = build_runtime({"user_agent": "My-Test-Client/2.0"})
+        self.assertEqual(runtime["user_agent"], "My-Test-Client/2.0")
 
     def test_extract_assistant_text_supports_rich_parts(self):
         """多段内容响应应被拼接成纯文本。"""
@@ -47,6 +57,20 @@ class AiApiTesterTests(unittest.TestCase):
         }
 
         self.assertEqual(extract_assistant_text(payload), "第一段\n第二段")
+
+    def test_parse_stream_events_reassembles_text_and_usage(self):
+        """SSE chunks should be normalized into a regular payload."""
+        raw_body = (
+            'data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n'
+            'data: {"choices":[{"delta":{"content":", world"}}]}\n\n'
+            'data: {"choices":[{"delta":{}}],"usage":{"prompt_tokens":12,"completion_tokens":8,"total_tokens":20}}\n\n'
+            'data: [DONE]\n\n'
+        )
+
+        payload = _parse_stream_events(raw_body)
+
+        self.assertEqual(extract_assistant_text(payload), "Hello, world")
+        self.assertEqual(payload["usage"]["total_tokens"], 20)
 
     def test_statistics_are_aggregated_from_history(self):
         """统计结果应正确计算平均耗时和 token。"""
@@ -98,6 +122,32 @@ class AiApiTesterTests(unittest.TestCase):
             self.assertEqual(stats["kind_breakdown"]["vision"], 1)
             self.assertEqual(stats["latest_session_at"], "2026-03-20T11:00:00Z")
 
+    def test_cloudflare_1010_error_is_classified_with_actionable_message(self):
+        """Cloudflare 1010 应被识别成上游拦截而非普通 403。"""
+        runtime = build_runtime({"base_url": "https://api-vip.codex-for.me/v1"})
+        error = URL_ERROR.HTTPError(
+            url="https://api-vip.codex-for.me/v1/models",
+            code=403,
+            msg="Forbidden",
+            hdrs=None,
+            fp=None,
+        )
+
+        classified = _build_upstream_http_error(
+            runtime,
+            error,
+            '{"title":"Error 1010: Access denied","status":403,"detail":"The site owner has blocked access based on your browser\\u0027s signature.","error_code":1010,"error_name":"browser_signature_banned","cloudflare_error":true,"retryable":false,"owner_action_required":true,"zone":"api-vip.codex-for.me"}',
+        )
+
+        self.assertIsInstance(classified, UpstreamServiceError)
+        self.assertEqual(classified.status_code, 403)
+        self.assertEqual(classified.diagnostic_code, "cloudflare_browser_signature_banned")
+        self.assertIn("Cloudflare", str(classified))
+        self.assertIn("apikey 错误", str(classified))
+
 
 if __name__ == "__main__":
     unittest.main()
+
+
+

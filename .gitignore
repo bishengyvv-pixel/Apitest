@@ -1,10 +1,50 @@
-# Python-generated files
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.codex/
+
+# Python
 __pycache__/
 *.py[oc]
+*.pyd
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+
+# Python build / packaging
 build/
 dist/
 wheels/
-*.egg-info
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
 
-# Virtual environments
-.venv
+# Python tooling / test caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Logs / temp files
+*.log
+*.tmp
+
+# Web frontend
+web/node_modules/
+web/dist/
+
+# Generated web assets served by the Python backend
+packages/ai_api_tester_web/assets/index-*.js
+packages/ai_api_tester_web/assets/index-*.css
+
+# Local runtime data
+data/ai_api_tester_history.jsonl
+data/ai_api_tester_gui_config.json
+data/codex_presets.json

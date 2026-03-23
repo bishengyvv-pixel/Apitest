@@ -94,6 +94,11 @@ def add_shared_arguments(parser):
         help="系统提示词，未传时使用内置默认值。",
     )
     parser.add_argument(
+        "--user-agent",
+        default="",
+        help="自定义 HTTP User-Agent，未传时读取 AI_HTTP_USER_AGENT。",
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="以 JSON 形式输出结果，便于脚本二次处理。",
@@ -115,6 +120,8 @@ def build_settings(args):
         settings["max_tokens"] = args.max_tokens
     if args.system_prompt:
         settings["system_prompt"] = args.system_prompt
+    if args.user_agent:
+        settings["user_agent"] = args.user_agent
     return settings
 
 

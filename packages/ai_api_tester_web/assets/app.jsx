@@ -2,9 +2,19 @@
 
 function App() {
   const [bootstrap, setBootstrap] = useState(null);
-  const [form, setForm] = useState({ base_url: "", api_key: "", model: "" });
+  const [form, setForm] = useState({ base_url: "", api_key: "", model: "", preset_name: "" });
   const [models, setModels] = useState([]);
-  const [loading, setLoading] = useState({ bootstrap: true, models: false, text: false, vision: false });
+  const [codexPresets, setCodexPresets] = useState([]);
+  const [codexActive, setCodexActive] = useState(null);
+  const [codexStatus, setCodexStatus] = useState("");
+  const [loading, setLoading] = useState({
+    bootstrap: true,
+    models: false,
+    text: false,
+    vision: false,
+    codex_save: false,
+    codex_apply: false,
+  });
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
@@ -12,6 +22,14 @@ function App() {
     fetchJson("/api/bootstrap", { method: "GET" })
       .then((payload) => {
         setBootstrap(payload);
+        setCodexPresets(payload.codex_presets || []);
+        setCodexActive(payload.codex_active || null);
+        setForm((current) => ({
+          ...current,
+          base_url: current.base_url || payload.codex_active?.base_url || "",
+          api_key: current.api_key || payload.codex_active?.api_key || "",
+          preset_name: current.preset_name || payload.codex_active?.name || "",
+        }));
       })
       .catch((requestError) => {
         setError(getErrorMessage(requestError));
@@ -25,8 +43,84 @@ function App() {
     return Boolean(form.base_url.trim() && form.api_key.trim());
   }, [form]);
 
+  const canManageCodex = useMemo(() => {
+    return Boolean(form.preset_name.trim() && form.base_url.trim() && form.api_key.trim());
+  }, [form]);
+
   const updateField = (fieldName, value) => {
     setForm((current) => ({ ...current, [fieldName]: value }));
+  };
+
+  const applyPresetToForm = (presetName) => {
+    const preset = codexPresets.find((item) => item.name === presetName);
+    if (!preset) {
+      return;
+    }
+    setForm((current) => ({
+      ...current,
+      base_url: preset.base_url || "",
+      api_key: preset.api_key || "",
+      preset_name: preset.name || "",
+    }));
+    setCodexStatus(`已载入预设：${preset.name}`);
+  };
+
+  const buildCodexPayload = () => {
+    return {
+      name: form.preset_name,
+      base_url: form.base_url,
+      api_key: form.api_key,
+    };
+  };
+
+  const saveCodexPreset = async () => {
+    setError("");
+    setCodexStatus("");
+    if (!canManageCodex) {
+      setError("保存 Codex 预设前，请填写预设名称、baseurl 和 apikey。");
+      return;
+    }
+
+    setLoading((current) => ({ ...current, codex_save: true }));
+    try {
+      const payload = await fetchJson("/api/codex-presets", {
+        method: "POST",
+        body: JSON.stringify(buildCodexPayload()),
+      });
+      setCodexPresets(payload.presets || []);
+      if (payload.preset) {
+        updateField("preset_name", payload.preset.name || "");
+      }
+      setCodexStatus(payload.message || "Codex 预设已保存。");
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLoading((current) => ({ ...current, codex_save: false }));
+    }
+  };
+
+  const applyCodexPreset = async () => {
+    setError("");
+    setCodexStatus("");
+    if (!canManageCodex) {
+      setError("应用到 Codex 前，请填写预设名称、baseurl 和 apikey。");
+      return;
+    }
+
+    setLoading((current) => ({ ...current, codex_apply: true }));
+    try {
+      const payload = await fetchJson("/api/codex-apply", {
+        method: "POST",
+        body: JSON.stringify(buildCodexPayload()),
+      });
+      setCodexPresets(payload.presets || []);
+      setCodexActive(payload.active || null);
+      setCodexStatus(payload.message || "已写入 Codex 配置。");
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLoading((current) => ({ ...current, codex_apply: false }));
+    }
   };
 
   const loadModels = async () => {
@@ -97,8 +191,8 @@ function App() {
               <div className="muted">只需要 `baseurl` 和 `apikey`，不用再填 prompt 或图片路径。</div>
             </div>
             <div className="check-item">
-              <strong>2. 模型可选</strong>
-              <div className="muted">你可以手动加载模型并选择，也可以直接发送默认请求。</div>
+              <strong>2. 保存 Codex 预设</strong>
+              <div className="muted">你可以顺手给当前连接取一个名字，后续一键写回 Codex 配置。</div>
             </div>
             <div className="check-item">
               <strong>3. 默认文本</strong>
@@ -123,8 +217,8 @@ function App() {
               请输入当前接口对应的访问密钥。
             </div>
             <div className="guide-card">
-              <strong>模型可选</strong>
-              如果不选择模型，系统会优先尝试读取模型列表并自动使用第一项。
+              <strong>`Codex 预设名`</strong>
+              给这组连接起一个容易记住的名字，保存后就能反复切换并应用到 `.codex/config.toml`。
             </div>
           </div>
         </div>
@@ -133,9 +227,37 @@ function App() {
       <section className="layout">
         <aside className="surface">
           <h2 className="section-title">连接信息</h2>
-          <p className="section-subtitle">这里是用户唯一需要主动填写的内容。</p>
+          <p className="section-subtitle">这里既是接口测试入口，也是 Codex 预设管理区。</p>
 
           <div className="form-grid">
+            <div>
+              <label className="field-label">
+                <span>已存 Codex 预设</span>
+                <span className="field-badge">可选</span>
+              </label>
+              <select className="select" value="" onChange={(event) => applyPresetToForm(event.target.value)}>
+                <option value="">选择一个预设填入当前表单</option>
+                {codexPresets.map((item) => (
+                  <option key={item.provider_id || item.name} value={item.name}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="field-label">
+                <span>Codex 预设名</span>
+                <span className="field-badge">必填</span>
+              </label>
+              <input
+                className="input"
+                value={form.preset_name}
+                onChange={(event) => updateField("preset_name", event.target.value)}
+                placeholder="例如：公司香港节点"
+              />
+            </div>
+
             <div>
               <label className="field-label">
                 <span>baseurl</span>
@@ -186,11 +308,33 @@ function App() {
               <button className="secondary-button" type="button" disabled={loading.models} onClick={loadModels}>
                 {loading.models ? "模型加载中..." : "加载模型列表"}
               </button>
+              <button className="secondary-button" type="button" disabled={loading.codex_save} onClick={saveCodexPreset}>
+                {loading.codex_save ? "保存中..." : "保存 Codex 预设"}
+              </button>
+              <button className="primary-button" type="button" disabled={loading.codex_apply} onClick={applyCodexPreset}>
+                {loading.codex_apply ? "写入中..." : "应用到 Codex"}
+              </button>
             </div>
+
+            {codexActive?.name ? (
+              <div className="guide-card">
+                <strong>当前 Codex 生效配置</strong>
+                <div className="muted">名称：{codexActive.name || "-"}</div>
+                <div className="muted">Base URL：{codexActive.base_url || "-"}</div>
+                <div className="muted">配置文件：{codexActive.config_path || "-"}</div>
+              </div>
+            ) : null}
+
+            {codexStatus ? (
+              <div className="guide-card">
+                <strong>操作结果</strong>
+                <div className="muted">{codexStatus}</div>
+              </div>
+            ) : null}
 
             <div className="guide-card">
               <strong>当前引导逻辑</strong>
-              如果你只想做最快的接口连通性测试，直接填完 `baseurl` 和 `apikey` 后点击右侧两个按钮即可。
+              先填好连接信息，测试可用后点“保存 Codex 预设”；确认无误再点“应用到 Codex”，就不用反复手动打开用户目录改配置了。
             </div>
           </div>
         </aside>
@@ -295,4 +439,3 @@ function getErrorMessage(error) {
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-

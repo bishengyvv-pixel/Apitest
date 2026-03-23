@@ -4,11 +4,22 @@ from ...adaptor.config.defaults import (
     DEFAULT_API_BASE_URL,
     DEFAULT_CHAT_COMPLETIONS_PATH,
     DEFAULT_HISTORY_PATH,
+    DEFAULT_HTTP_USER_AGENT,
     DEFAULT_MAX_TOKENS,
     DEFAULT_MODELS_PATH,
     DEFAULT_REQUEST_TIMEOUT_SECONDS,
 )
 from ...shell.requirements import BASE64, JSON, OS, PATH, TIME, URL_ERROR, URL_REQUEST
+
+
+class UpstreamServiceError(RuntimeError):
+    """描述上游接口访问失败的统一异常。"""
+
+    def __init__(self, message, status_code=0, diagnostic_code="", details=None):
+        super().__init__(message)
+        self.status_code = int(status_code or 0)
+        self.diagnostic_code = str(diagnostic_code or "").strip()
+        self.details = details or {}
 
 
 def build_runtime(settings):
@@ -19,6 +30,7 @@ def build_runtime(settings):
     history_path = settings.get("history_path") or env.get("AI_HISTORY_PATH") or DEFAULT_HISTORY_PATH
     system_prompt = settings.get("system_prompt") or env.get("AI_SYSTEM_PROMPT") or ""
     default_model = settings.get("default_model") or env.get("AI_DEFAULT_MODEL") or ""
+    user_agent = settings.get("user_agent") or env.get("AI_HTTP_USER_AGENT") or DEFAULT_HTTP_USER_AGENT
 
     timeout_value = settings.get("timeout_seconds")
     if not timeout_value:
@@ -34,6 +46,7 @@ def build_runtime(settings):
         "history_path": str(history_path).strip(),
         "system_prompt": str(system_prompt).strip(),
         "default_model": str(default_model).strip(),
+        "user_agent": str(user_agent).strip() or DEFAULT_HTTP_USER_AGENT,
         "timeout_seconds": _coerce_positive_int(
             timeout_value,
             DEFAULT_REQUEST_TIMEOUT_SECONDS,
@@ -107,10 +120,11 @@ def send_chat_completion(runtime, model, messages):
     payload = {
         "model": model,
         "messages": messages,
-        "stream": False,
+        "stream": True,
+        "stream_options": {"include_usage": True},
         "max_tokens": runtime["max_tokens"],
     }
-    response_payload = _request_json(runtime, "POST", DEFAULT_CHAT_COMPLETIONS_PATH, payload)
+    response_payload = _request_chat_completion(runtime, payload)
     elapsed_seconds = round(TIME.perf_counter() - start, 3)
 
     return {
@@ -135,18 +149,7 @@ def extract_assistant_text(payload):
     message = first_choice.get("message")
     if isinstance(message, dict):
         content = message.get("content")
-        if isinstance(content, str):
-            return content.strip()
-        if isinstance(content, list):
-            text_chunks = []
-            for part in content:
-                if not isinstance(part, dict):
-                    continue
-                if part.get("type") == "text":
-                    part_text = part.get("text")
-                    if isinstance(part_text, str) and part_text.strip():
-                        text_chunks.append(part_text.strip())
-            return "\n".join(text_chunks).strip()
+        return "\n".join(_extract_text_parts(content)).strip()
 
     fallback_text = first_choice.get("text")
     if isinstance(fallback_text, str):
@@ -161,6 +164,7 @@ def _request_json(runtime, method, path, payload=None):
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
+        "User-Agent": runtime["user_agent"],
     }
     if runtime["api_key"]:
         headers["Authorization"] = f"Bearer {runtime['api_key']}"
@@ -176,10 +180,135 @@ def _request_json(runtime, method, path, payload=None):
             return JSON.loads(raw_body)
     except URL_ERROR.HTTPError as error:
         error_body = error.read().decode("utf-8", errors="replace")
-        detail = error_body.strip() or str(error.reason)
-        raise RuntimeError(f"HTTP {error.code}: {detail}") from error
+        raise _build_upstream_http_error(runtime, error, error_body) from error
     except URL_ERROR.URLError as error:
-        raise RuntimeError(f"网络请求失败: {error.reason}") from error
+        raise UpstreamServiceError(
+            f"网络请求失败: {error.reason}",
+            diagnostic_code="network_request_failed",
+            details={"reason": str(error.reason)},
+        ) from error
+
+
+def _request_chat_completion(runtime, payload):
+    """???????????? JSON ? SSE ?????"""
+    url = runtime["base_url"] + DEFAULT_CHAT_COMPLETIONS_PATH
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": runtime["user_agent"],
+    }
+    if runtime["api_key"]:
+        headers["Authorization"] = f"Bearer {runtime['api_key']}"
+
+    body = JSON.dumps(payload, ensure_ascii=False).encode("utf-8")
+    request = URL_REQUEST.Request(url=url, data=body, headers=headers, method="POST")
+
+    try:
+        with URL_REQUEST.urlopen(request, timeout=runtime["timeout_seconds"]) as response:
+            raw_body = response.read().decode("utf-8", errors="replace")
+            content_type = str(response.headers.get("Content-Type") or "").lower()
+            if "text/event-stream" in content_type or _looks_like_sse_payload(raw_body):
+                return _parse_stream_events(raw_body)
+            return JSON.loads(raw_body)
+    except URL_ERROR.HTTPError as error:
+        error_body = error.read().decode("utf-8", errors="replace")
+        raise _build_upstream_http_error(runtime, error, error_body) from error
+    except URL_ERROR.URLError as error:
+        raise UpstreamServiceError(
+            f"??????: {error.reason}",
+            diagnostic_code="network_request_failed",
+            details={"reason": str(error.reason)},
+        ) from error
+
+
+def _looks_like_sse_payload(raw_body):
+    """??????????????? SSE?"""
+    for line in str(raw_body or "").splitlines():
+        stripped = line.strip()
+        if stripped:
+            return stripped.startswith("data:")
+    return False
+
+
+def _parse_stream_events(raw_body):
+    """? SSE ????????????????????"""
+    text_chunks = []
+    usage = {}
+    data_lines = []
+
+    def consume_event(lines):
+        nonlocal usage
+        if not lines:
+            return
+
+        data = "\n".join(lines).strip()
+        if not data or data == "[DONE]":
+            return
+
+        payload = _parse_json_object(data)
+        if not payload:
+            return
+
+        chunk_usage = payload.get("usage")
+        if isinstance(chunk_usage, dict):
+            usage = chunk_usage
+
+        choices = payload.get("choices")
+        if not isinstance(choices, list) or not choices:
+            return
+
+        choice = choices[0]
+        if not isinstance(choice, dict):
+            return
+
+        delta = choice.get("delta")
+        if isinstance(delta, dict):
+            text_chunks.extend(_extract_text_parts(delta.get("content")))
+
+        message = choice.get("message")
+        if isinstance(message, dict):
+            text_chunks.extend(_extract_text_parts(message.get("content")))
+
+        fallback_text = choice.get("text")
+        if isinstance(fallback_text, str) and fallback_text:
+            text_chunks.append(fallback_text)
+
+    for line in str(raw_body or "").replace("\r\n", "\n").split("\n"):
+        stripped = line.strip()
+        if not stripped:
+            consume_event(data_lines)
+            data_lines = []
+            continue
+        if stripped.startswith("data:"):
+            data_lines.append(stripped[5:].lstrip())
+
+    consume_event(data_lines)
+
+    return {
+        "choices": [{"message": {"content": "".join(text_chunks)}}],
+        "usage": usage,
+    }
+
+
+def _extract_text_parts(content):
+    """?????????????"""
+    if isinstance(content, str):
+        text = content.strip()
+        return [text] if text else []
+
+    if not isinstance(content, list):
+        return []
+
+    text_chunks = []
+    for part in content:
+        if not isinstance(part, dict):
+            continue
+        if part.get("type") != "text":
+            continue
+        part_text = part.get("text")
+        if isinstance(part_text, str) and part_text.strip():
+            text_chunks.append(part_text.strip())
+    return text_chunks
 
 
 def _read_image_as_data_url(image_path):
@@ -222,6 +351,89 @@ def _normalize_usage(raw_usage):
         "completion_tokens": completion_tokens,
         "total_tokens": total_tokens,
     }
+
+
+def _build_upstream_http_error(runtime, error, error_body):
+    """将 HTTPError 归一化为可诊断的上游异常。"""
+    parsed_payload = _parse_json_object(error_body)
+    detail = (error_body or "").strip() or str(error.reason)
+    host = _extract_host(runtime.get("base_url") or "")
+
+    if _is_cloudflare_browser_ban(parsed_payload):
+        zone = str(parsed_payload.get("zone") or host or "").strip()
+        message = (
+            f"上游接口返回 HTTP {error.code}，Cloudflare 已拒绝当前客户端签名。"
+            f"站点 {zone or host or 'unknown'} 标记为 browser_signature_banned / Error 1010，"
+            "这通常不是 apikey 错误，而是该接口域名不接受当前这类服务端请求、"
+            "需要供应商放行客户端标识或 IP，或该域名本身并非面向通用 OpenAI 兼容 API 调用。"
+            "请不要直接重试相同请求，优先确认你填写的是供应商正式支持的 API 域名，"
+            "并联系站点方为当前客户端签名放行。"
+        )
+        return UpstreamServiceError(
+            message,
+            status_code=error.code,
+            diagnostic_code="cloudflare_browser_signature_banned",
+            details={
+                "status_code": error.code,
+                "host": host,
+                "zone": zone,
+                "error_code": str(parsed_payload.get("error_code") or ""),
+                "error_name": str(parsed_payload.get("error_name") or ""),
+                "retryable": bool(parsed_payload.get("retryable")),
+                "owner_action_required": bool(parsed_payload.get("owner_action_required")),
+            },
+        )
+
+    return UpstreamServiceError(
+        f"上游接口返回 HTTP {error.code}: {detail}",
+        status_code=error.code,
+        diagnostic_code=f"http_{error.code}",
+        details={
+            "status_code": error.code,
+            "host": host,
+            "raw_detail": detail,
+        },
+    )
+
+
+def _parse_json_object(raw_text):
+    """尽量将错误体解析为 JSON 对象。"""
+    try:
+        payload = JSON.loads(raw_text)
+        if isinstance(payload, dict):
+            return payload
+    except (TypeError, ValueError):
+        return {}
+    return {}
+
+
+def _extract_host(base_url):
+    """从 base_url 中提取主机名，便于诊断输出。"""
+    text = str(base_url or "").strip()
+    if "://" not in text:
+        return ""
+    without_scheme = text.split("://", 1)[1]
+    return without_scheme.split("/", 1)[0].strip()
+
+
+def _is_cloudflare_browser_ban(payload):
+    """识别 Cloudflare 1010 / browser_signature_banned 错误。"""
+    if not isinstance(payload, dict):
+        return False
+
+    title = str(payload.get("title") or "")
+    error_name = str(payload.get("error_name") or "")
+    error_code = str(payload.get("error_code") or "")
+    detail = str(payload.get("detail") or "")
+
+    indicators = (
+        payload.get("cloudflare_error") is True,
+        "Error 1010" in title,
+        error_name == "browser_signature_banned",
+        error_code == "1010",
+        "browser's signature" in detail,
+    )
+    return any(indicators)
 
 
 def _coerce_positive_int(value, default_value):

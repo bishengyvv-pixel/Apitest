@@ -1,6 +1,14 @@
 ﻿"""Web 产品服务：负责 HTTP 路由与页面启动。"""
 
+from packages.ai_api_tester.adaptor.impl.api_gateway import UpstreamServiceError
+
 from ...adaptor.config.defaults import DEFAULT_WEB_HOST, DEFAULT_WEB_PORT
+from ...adaptor.impl.codex_config_store import (
+    apply_codex_preset,
+    load_codex_active_settings,
+    load_codex_presets,
+    upsert_codex_preset,
+)
 from ...adaptor.impl.http_app import create_http_server
 from ...adaptor.impl.http_bridge import fetch_models, get_assets_dir, send_text_request, send_vision_request
 from ...product.config.defaults import (
@@ -56,9 +64,20 @@ def handle_api_request(method, path, payload, app_context):
             return 200, run_default_text(payload)
         if method == "POST" and path == "/api/default-vision":
             return 200, run_default_vision(payload, app_context)
+        if method == "POST" and path == "/api/codex-presets":
+            return 200, save_codex_preset(payload)
+        if method == "POST" and path == "/api/codex-apply":
+            return 200, apply_selected_codex_preset(payload)
         return 404, {"error": "未找到 API 路径。"}
     except ValueError as error:
         return 400, {"error": str(error)}
+    except UpstreamServiceError as error:
+        return 502, {
+            "error": str(error),
+            "upstream_status_code": error.status_code,
+            "diagnostic_code": error.diagnostic_code,
+            "details": error.details,
+        }
     except Exception as error:
         return 500, {"error": f"服务执行失败: {error}"}
 
@@ -71,6 +90,8 @@ def build_bootstrap_payload():
         "default_text_prompt": DEFAULT_TEXT_PROMPT,
         "default_vision_prompt": DEFAULT_VISION_PROMPT,
         "default_vision_image_url": f"/assets/{DEFAULT_VISION_IMAGE_NAME}",
+        "codex_presets": load_codex_presets(),
+        "codex_active": load_codex_active_settings(),
     }
 
 
@@ -108,6 +129,18 @@ def run_default_vision(payload, app_context):
     response_payload = build_action_payload("vision", selected_model, DEFAULT_VISION_PROMPT, result)
     response_payload["default_vision_image_url"] = f"/assets/{DEFAULT_VISION_IMAGE_NAME}"
     return response_payload
+
+
+def save_codex_preset(payload):
+    """保存一个 Codex 预设。"""
+    preset = extract_codex_preset(payload)
+    return upsert_codex_preset(preset)
+
+
+def apply_selected_codex_preset(payload):
+    """将一个预设写入用户的 Codex 配置。"""
+    preset = extract_codex_preset(payload)
+    return apply_codex_preset(preset)
 
 
 def build_action_payload(kind, model, prompt, result):
@@ -148,6 +181,25 @@ def extract_connection_settings(payload):
     if not api_key:
         raise ValueError("apikey 为必填项。")
     return {
+        "base_url": base_url,
+        "api_key": api_key,
+    }
+
+
+def extract_codex_preset(payload):
+    """校验并提取 Codex 预设字段。"""
+    source = payload or {}
+    name = _clean_text(source.get("name"))
+    base_url = _clean_text(source.get("base_url"))
+    api_key = _clean_text(source.get("api_key"))
+    if not name:
+        raise ValueError("预设名称为必填项。")
+    if not base_url:
+        raise ValueError("baseurl 为必填项。")
+    if not api_key:
+        raise ValueError("apikey 为必填项。")
+    return {
+        "name": name,
         "base_url": base_url,
         "api_key": api_key,
     }

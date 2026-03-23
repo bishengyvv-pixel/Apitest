@@ -11,3 +11,8 @@ DEFAULT_HISTORY_PATH = "data/ai_api_tester_history.jsonl"
 # 请求级别默认值统一由适配层维护。
 DEFAULT_REQUEST_TIMEOUT_SECONDS = 60
 DEFAULT_MAX_TOKENS = 1024
+DEFAULT_HTTP_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/136.0.0.0 Safari/537.36"
+)
