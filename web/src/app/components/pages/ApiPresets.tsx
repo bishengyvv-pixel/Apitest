@@ -50,7 +50,7 @@ export function ApiPresets() {
         <motion.section
           variants={pageReveal}
           whileHover={reduceMotion ? undefined : { y: -4, boxShadow: "0 24px 60px -32px rgba(15, 23, 42, 0.22)" }}
-          className="rounded-3xl border border-white/80 bg-white/55 p-6 shadow-lg backdrop-blur-xl transition-shadow"
+          className="rounded-3xl border border-white/80 bg-white/72 p-6 shadow-lg backdrop-blur-sm transition-shadow"
         >
           <div className="flex items-center gap-2 text-slate-700">
             <Server className="h-4 w-4 text-blue-500" />
@@ -149,7 +149,7 @@ export function ApiPresets() {
         <motion.section
           variants={pageReveal}
           whileHover={reduceMotion ? undefined : { y: -4, boxShadow: "0 24px 60px -32px rgba(15, 23, 42, 0.22)" }}
-          className="rounded-3xl border border-white/80 bg-white/55 p-6 shadow-lg backdrop-blur-xl transition-shadow"
+          className="rounded-3xl border border-white/80 bg-white/72 p-6 shadow-lg backdrop-blur-sm transition-shadow"
         >
           <div className="flex items-center gap-2 text-slate-700">
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -175,7 +175,7 @@ export function ApiPresets() {
       <motion.section
         variants={pageReveal}
         whileHover={reduceMotion ? undefined : { y: -4, boxShadow: "0 24px 60px -32px rgba(15, 23, 42, 0.22)" }}
-        className="rounded-3xl border border-white/80 bg-white/55 p-6 shadow-lg backdrop-blur-xl transition-shadow"
+        className="rounded-3xl border border-white/80 bg-white/72 p-6 shadow-lg backdrop-blur-sm transition-shadow"
       >
         <div className="flex items-center justify-between gap-4">
           <div>

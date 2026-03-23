@@ -65,7 +65,7 @@ export function ApiTesting() {
           <motion.section
             variants={pageReveal}
             whileHover={reduceMotion ? undefined : { y: -4, boxShadow: "0 24px 60px -32px rgba(15, 23, 42, 0.22)" }}
-            className="rounded-3xl border border-white/80 bg-white/55 p-5 shadow-lg backdrop-blur-xl transition-shadow"
+            className="rounded-3xl border border-white/80 bg-white/72 p-5 shadow-lg backdrop-blur-sm transition-shadow"
           >
             <div className="flex items-center gap-2 text-slate-700">
               <Layers3 className="h-4 w-4 text-blue-500" />
@@ -133,7 +133,7 @@ export function ApiTesting() {
           <motion.section
             variants={pageReveal}
             whileHover={reduceMotion ? undefined : { y: -4, boxShadow: "0 24px 60px -32px rgba(15, 23, 42, 0.26)" }}
-            className="rounded-3xl border border-white/80 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-5 text-slate-100 shadow-lg transition-shadow"
+            className="rounded-3xl border border-white/60 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-5 text-slate-100 shadow-lg transition-shadow"
           >
             <p className="text-xs uppercase tracking-[0.24em] text-slate-400">{t("codexActive")}</p>
             <div className="mt-4 space-y-3">
@@ -177,7 +177,7 @@ export function ApiTesting() {
           <motion.section
             variants={pageReveal}
             whileHover={reduceMotion ? undefined : { y: -4, boxShadow: "0 24px 60px -32px rgba(15, 23, 42, 0.22)" }}
-            className="rounded-3xl border border-white/80 bg-white/55 p-6 shadow-lg backdrop-blur-xl transition-shadow"
+            className="rounded-3xl border border-white/80 bg-white/72 p-6 shadow-lg backdrop-blur-sm transition-shadow"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -203,7 +203,7 @@ export function ApiTesting() {
           <motion.section
             variants={pageReveal}
             whileHover={reduceMotion ? undefined : { y: -4, boxShadow: "0 24px 60px -32px rgba(15, 23, 42, 0.22)" }}
-            className="rounded-3xl border border-white/80 bg-white/55 p-6 shadow-lg backdrop-blur-xl transition-shadow"
+            className="rounded-3xl border border-white/80 bg-white/72 p-6 shadow-lg backdrop-blur-sm transition-shadow"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -248,7 +248,7 @@ export function ApiTesting() {
         <motion.section
           variants={pageReveal}
           whileHover={reduceMotion ? undefined : { y: -4, boxShadow: "0 24px 60px -32px rgba(15, 23, 42, 0.22)" }}
-          className="rounded-3xl border border-white/80 bg-white/55 p-6 shadow-lg backdrop-blur-xl transition-shadow"
+          className="rounded-3xl border border-white/80 bg-white/72 p-6 shadow-lg backdrop-blur-sm transition-shadow"
         >
           <div className="flex items-start justify-between gap-4">
             <div>

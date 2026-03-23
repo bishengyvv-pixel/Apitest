@@ -35,42 +35,7 @@ export function Layout() {
       </motion.button>
 
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-        <motion.div
-          animate={
-            reduceMotion
-              ? undefined
-              : {
-                  x: ["0%", "50%", "-20%", "0%"],
-                  y: ["0%", "-30%", "20%", "0%"],
-                }
-          }
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute -left-[10%] -top-[30%] h-[70vw] w-[70vw] rounded-full bg-blue-200/36 opacity-72 blur-[120px] mix-blend-multiply"
-        />
-        <motion.div
-          animate={
-            reduceMotion
-              ? undefined
-              : {
-                  x: ["0%", "-50%", "30%", "0%"],
-                  y: ["0%", "40%", "-10%", "0%"],
-                }
-          }
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute right-[0%] top-[20%] h-[60vw] w-[60vw] rounded-full bg-amber-100/34 opacity-66 blur-[120px] mix-blend-multiply"
-        />
-        <motion.div
-          animate={
-            reduceMotion
-              ? undefined
-              : {
-                  x: ["0%", "18%", "-12%", "0%"],
-                  y: ["0%", "14%", "-8%", "0%"],
-                }
-          }
-          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute left-[28%] top-[8%] h-[26vw] w-[26vw] rounded-full bg-cyan-200/30 opacity-58 blur-[104px]"
-        />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(191,219,254,0.44),transparent_24%),radial-gradient(circle_at_82%_20%,rgba(207,250,254,0.34),transparent_22%),radial-gradient(circle_at_50%_84%,rgba(254,243,199,0.22),transparent_24%)]" />
         <BackgroundGlassBlocks />
       </div>
 
@@ -90,7 +55,7 @@ export function Layout() {
           initial={{ width: 280 }}
           animate={{ width: isSidebarOpen ? 280 : 80 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="relative z-20 flex h-screen flex-col border-l border-white/80 bg-white/60 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.05)] backdrop-blur-xl"
+          className="relative z-20 flex h-screen flex-col border-l border-white/80 bg-white/72 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.05)] backdrop-blur-md"
         >
           <div className="flex items-center justify-between border-b border-slate-200/50 p-4">
             <motion.div
