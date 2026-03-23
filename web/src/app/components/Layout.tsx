@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router";
 import { Settings, MessageSquare, ChevronRight, ChevronLeft, Languages, Zap } from "lucide-react";
 import { useLocale } from "../context/LocaleContext";
+import { BackgroundGlassBlocks } from "./BackgroundGlassBlocks";
 
 export function Layout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -44,7 +45,7 @@ export function Layout() {
                 }
           }
           transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute -left-[10%] -top-[30%] h-[70vw] w-[70vw] rounded-full bg-blue-100/40 opacity-70 blur-3xl mix-blend-multiply"
+          className="absolute -left-[10%] -top-[30%] h-[70vw] w-[70vw] rounded-full bg-blue-200/36 opacity-72 blur-[120px] mix-blend-multiply"
         />
         <motion.div
           animate={
@@ -56,7 +57,7 @@ export function Layout() {
                 }
           }
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute right-[0%] top-[20%] h-[60vw] w-[60vw] rounded-full bg-amber-100/40 opacity-70 blur-3xl mix-blend-multiply"
+          className="absolute right-[0%] top-[20%] h-[60vw] w-[60vw] rounded-full bg-amber-100/34 opacity-66 blur-[120px] mix-blend-multiply"
         />
         <motion.div
           animate={
@@ -68,8 +69,9 @@ export function Layout() {
                 }
           }
           transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute left-[28%] top-[8%] h-[26vw] w-[26vw] rounded-full bg-cyan-100/30 opacity-60 blur-3xl"
+          className="absolute left-[28%] top-[8%] h-[26vw] w-[26vw] rounded-full bg-cyan-200/30 opacity-58 blur-[104px]"
         />
+        <BackgroundGlassBlocks />
       </div>
 
       <div className="relative z-10 flex min-h-screen w-full overflow-hidden">
