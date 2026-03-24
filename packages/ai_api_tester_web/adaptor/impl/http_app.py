@@ -31,6 +31,14 @@ def create_http_server(host, port, assets_dir, api_handler):
                 return
             self._write_json(404, {"error": "未找到请求路径。"})
 
+        def do_DELETE(self):
+            """处理 DELETE 请求。"""
+            parsed = URL_PARSE(self.path)
+            if parsed.path.startswith("/api/"):
+                self._handle_api("DELETE", parsed.path)
+                return
+            self._write_json(404, {"error": "未找到请求路径。"})
+
         def log_message(self, _format, *_args):
             """关闭默认访问日志输出。"""
             return
@@ -38,7 +46,7 @@ def create_http_server(host, port, assets_dir, api_handler):
         def _handle_api(self, method, path):
             """将 API 请求委托给上层回调。"""
             payload = {}
-            if method == "POST":
+            if method in {"POST", "DELETE"}:
                 payload = self._read_json_body()
             status_code, response_payload = api_handler(method, path, payload)
             self._write_json(status_code, response_payload)
@@ -97,4 +105,5 @@ def _resolve_static_file(assets_dir, path):
         return None
 
     return assets_dir / DEFAULT_INDEX_FILE
+
 

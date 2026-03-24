@@ -13,6 +13,9 @@ const pageReveal = {
   },
 };
 
+const panelClass =
+  "rounded-3xl border border-white/85 bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,rgba(255,255,255,0.88)_100%)] ring-1 ring-white/60 shadow-[0_18px_44px_-30px_rgba(15,23,42,0.14)] transition-shadow";
+
 export function ApiTesting() {
   const {
     bootstrap,
@@ -43,17 +46,17 @@ export function ApiTesting() {
           <div>
             <p className="text-sm uppercase tracking-[0.28em] text-slate-400">{t("testingConsole")}</p>
             <h1 className="[font-family:var(--font-display)] text-3xl font-bold tracking-[-0.05em] text-slate-800 md:text-[2.8rem]">
-              {bootstrap?.title || t("apiWebTester")}
+              {t("apiWebTester")}
             </h1>
             <p className="mt-2 text-[1.02rem] leading-8 tracking-[-0.015em] text-slate-500">
-              {bootstrap?.subtitle || t("loadingBootstrapData")}
+              {t("apiWebTesterSubtitle")}
             </p>
           </div>
           <motion.button
             onClick={clearResult}
             disabled={!result}
             className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/70 px-4 py-2.5 text-sm font-medium text-slate-600 shadow-sm transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-            whileHover={reduceMotion ? undefined : { y: -2, scale: 1.01 }}
+            whileHover={reduceMotion ? undefined : { scale: 1.02 }}
             whileTap={reduceMotion ? undefined : { scale: 0.985 }}
           >
             <Trash2 className="h-4 w-4" />
@@ -64,8 +67,7 @@ export function ApiTesting() {
         <div className="grid gap-4 lg:grid-cols-[1.35fr_0.95fr]">
           <motion.section
             variants={pageReveal}
-            whileHover={reduceMotion ? undefined : { y: -4, boxShadow: "0 24px 60px -32px rgba(15, 23, 42, 0.22)" }}
-            className="rounded-3xl border border-white/80 bg-white/72 p-5 shadow-lg backdrop-blur-sm transition-shadow"
+            className={`${panelClass} p-5`}
           >
             <div className="flex items-center gap-2 text-slate-700">
               <Layers3 className="h-4 w-4 text-blue-500" />
@@ -117,7 +119,7 @@ export function ApiTesting() {
                   onClick={() => void loadModels()}
                   disabled={loading.models || loading.bootstrap}
                   className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                  whileHover={reduceMotion ? undefined : { y: -2, scale: 1.01 }}
+                  whileHover={reduceMotion ? undefined : { scale: 1.02 }}
                   whileTap={reduceMotion ? undefined : { scale: 0.985 }}
                 >
                   {loading.models ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
@@ -132,7 +134,6 @@ export function ApiTesting() {
 
           <motion.section
             variants={pageReveal}
-            whileHover={reduceMotion ? undefined : { y: -4, boxShadow: "0 24px 60px -32px rgba(15, 23, 42, 0.26)" }}
             className="rounded-3xl border border-white/60 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-5 text-slate-100 shadow-lg transition-shadow"
           >
             <p className="text-xs uppercase tracking-[0.24em] text-slate-400">{t("codexActive")}</p>
@@ -164,7 +165,7 @@ export function ApiTesting() {
           <motion.button
             onClick={clearError}
             className="rounded-full px-2 py-1 text-xs font-semibold text-amber-700 transition hover:bg-amber-100"
-            whileHover={reduceMotion ? undefined : { scale: 1.03 }}
+            whileHover={reduceMotion ? undefined : { scale: 1.02 }}
             whileTap={reduceMotion ? undefined : { scale: 0.98 }}
           >
             {t("close")}
@@ -172,12 +173,11 @@ export function ApiTesting() {
         </motion.div>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        <div className="grid gap-6">
+      <div className="grid items-start gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <div className="grid content-start gap-6 self-start">
           <motion.section
             variants={pageReveal}
-            whileHover={reduceMotion ? undefined : { y: -4, boxShadow: "0 24px 60px -32px rgba(15, 23, 42, 0.22)" }}
-            className="rounded-3xl border border-white/80 bg-white/72 p-6 shadow-lg backdrop-blur-sm transition-shadow"
+            className={`${panelClass} p-6`}
           >
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -188,7 +188,7 @@ export function ApiTesting() {
                 onClick={() => void sendDefaultRequest("text")}
                 disabled={loading.text || loading.bootstrap}
                 className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                whileHover={reduceMotion ? undefined : { y: -2, scale: 1.01 }}
+                whileHover={reduceMotion ? undefined : { scale: 1.02 }}
                 whileTap={reduceMotion ? undefined : { scale: 0.985 }}
               >
                 {loading.text ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
@@ -202,8 +202,7 @@ export function ApiTesting() {
 
           <motion.section
             variants={pageReveal}
-            whileHover={reduceMotion ? undefined : { y: -4, boxShadow: "0 24px 60px -32px rgba(15, 23, 42, 0.22)" }}
-            className="rounded-3xl border border-white/80 bg-white/72 p-6 shadow-lg backdrop-blur-sm transition-shadow"
+            className={`${panelClass} p-6`}
           >
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -214,7 +213,7 @@ export function ApiTesting() {
                 onClick={() => void sendDefaultRequest("vision")}
                 disabled={loading.vision || loading.bootstrap}
                 className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                whileHover={reduceMotion ? undefined : { y: -2, scale: 1.01 }}
+                whileHover={reduceMotion ? undefined : { scale: 1.02 }}
                 whileTap={reduceMotion ? undefined : { scale: 0.985 }}
               >
                 {loading.vision ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
@@ -247,8 +246,7 @@ export function ApiTesting() {
 
         <motion.section
           variants={pageReveal}
-          whileHover={reduceMotion ? undefined : { y: -4, boxShadow: "0 24px 60px -32px rgba(15, 23, 42, 0.22)" }}
-          className="rounded-3xl border border-white/80 bg-white/72 p-6 shadow-lg backdrop-blur-sm transition-shadow"
+          className={`${panelClass} self-start p-6`}
         >
           <div className="flex items-start justify-between gap-4">
             <div>

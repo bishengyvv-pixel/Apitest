@@ -69,6 +69,25 @@ def upsert_codex_preset(payload, path=None):
     }
 
 
+
+def delete_codex_preset(name, path=None):
+    """按名称删除一个 Codex 预设。"""
+    preset_name = _clean_text(name)
+    if not preset_name:
+        raise ValueError("预设名称为必填项。")
+
+    presets = load_codex_presets(path)
+    remaining_items = [item for item in presets if item["name"] != preset_name]
+
+    if len(remaining_items) == len(presets):
+        raise ValueError(f"未找到预设：{preset_name}")
+
+    saved_items = save_codex_presets(remaining_items, path)
+    return {
+        "deleted_name": preset_name,
+        "presets": saved_items,
+        "message": f"已删除 Codex 预设：{preset_name}",
+    }
 def load_codex_active_settings(config_path=None, auth_path=None):
     """读取当前 Codex 生效配置。"""
     resolved_config_path = _resolve_codex_config_path(config_path)
@@ -287,17 +306,24 @@ def _normalize_preset(payload, require_all):
 
 def _build_provider_id(name):
     """将预设名称转换为稳定的 provider id。"""
-    raw_name = _clean_text(name).lower()
+    raw_name = _clean_text(name)
     characters = []
     previous_is_dash = False
     for char in raw_name:
-        if ("a" <= char <= "z") or ("0" <= char <= "9"):
-            characters.append(char)
+        lower_char = char.lower()
+        if ("a" <= lower_char <= "z") or ("0" <= lower_char <= "9"):
+            characters.append(lower_char)
             previous_is_dash = False
             continue
         if char in "-_ " and not previous_is_dash:
             characters.append("-")
             previous_is_dash = True
+            continue
+        if ord(char) > 127:
+            if characters and not previous_is_dash:
+                characters.append("-")
+            characters.append(f"u{ord(char):x}")
+            previous_is_dash = False
 
     provider_id = "".join(characters).strip("-")
     if provider_id:
@@ -331,3 +357,5 @@ def _resolve_codex_auth_path(path):
     if path:
         return PATH(path)
     return PATH.home() / ".codex" / "auth.json"
+
+

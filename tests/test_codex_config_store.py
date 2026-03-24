@@ -7,6 +7,7 @@ from pathlib import Path
 
 from packages.ai_api_tester_web.adaptor.impl.codex_config_store import (
     apply_codex_preset,
+    delete_codex_preset,
     load_codex_active_settings,
     load_codex_presets,
     upsert_codex_preset,
@@ -33,6 +34,45 @@ class CodexConfigStoreTests(unittest.TestCase):
             self.assertEqual(len(result["presets"]), 1)
             self.assertEqual(result["presets"][0]["base_url"], "https://two.example.com/v1")
             self.assertEqual(load_codex_presets(presets_path)[0]["api_key"], "key-2")
+
+    def test_upsert_codex_preset_keeps_multiple_non_ascii_names_distinct(self):
+        """不同中文名应生成不同 provider id，并同时保存在列表中。"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            presets_path = Path(temp_dir) / "codex_presets.json"
+
+            upsert_codex_preset(
+                {"name": "香港节点", "base_url": "https://hk.example.com/v1", "api_key": "key-hk"},
+                presets_path,
+            )
+            result = upsert_codex_preset(
+                {"name": "日本节点", "base_url": "https://jp.example.com/v1", "api_key": "key-jp"},
+                presets_path,
+            )
+
+            self.assertEqual(len(result["presets"]), 2)
+            self.assertEqual(result["presets"][0]["provider_id"], "preset-u9999-u6e2f-u8282-u70b9")
+            self.assertEqual(result["presets"][1]["provider_id"], "preset-u65e5-u672c-u8282-u70b9")
+
+    def test_delete_codex_preset_removes_target_item_only(self):
+        """删除预设时应只移除指定项。"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            presets_path = Path(temp_dir) / "codex_presets.json"
+
+            upsert_codex_preset(
+                {"name": "HK", "base_url": "https://hk.example.com/v1", "api_key": "key-hk"},
+                presets_path,
+            )
+            upsert_codex_preset(
+                {"name": "JP", "base_url": "https://jp.example.com/v1", "api_key": "key-jp"},
+                presets_path,
+            )
+
+            result = delete_codex_preset("HK", presets_path)
+
+            self.assertEqual(result["deleted_name"], "HK")
+            self.assertEqual(len(result["presets"]), 1)
+            self.assertEqual(result["presets"][0]["name"], "JP")
+            self.assertEqual(load_codex_presets(presets_path)[0]["name"], "JP")
 
     def test_apply_codex_preset_updates_config_and_auth_files(self):
         """应用预设时应同时更新 config.toml 和 auth.json。"""
@@ -99,3 +139,7 @@ class CodexConfigStoreTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+
+

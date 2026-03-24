@@ -1,4 +1,4 @@
-import { CheckCircle2, Globe, KeyRound, Loader2, Save, Server, Sparkles, UploadCloud } from "lucide-react";
+﻿import { CheckCircle2, Globe, KeyRound, Loader2, Save, Server, Sparkles, Trash2, UploadCloud } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useApi } from "../../context/ApiContext";
 import { useLocale } from "../../context/LocaleContext";
@@ -12,6 +12,9 @@ const pageReveal = {
     transition: { duration: 0.45, ease: "easeOut" },
   },
 };
+
+const panelClass =
+  "rounded-3xl border border-white/85 bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,rgba(255,255,255,0.88)_100%)] ring-1 ring-white/60 shadow-[0_18px_44px_-30px_rgba(15,23,42,0.14)] transition-shadow";
 
 export function ApiPresets() {
   const {
@@ -27,6 +30,7 @@ export function ApiPresets() {
     saveCodexPreset,
     applyCodexPreset,
     applySavedPresetToCodex,
+    deleteSavedPreset,
   } = useApi();
   const { t } = useLocale();
   const reduceMotion = useReducedMotion();
@@ -49,8 +53,7 @@ export function ApiPresets() {
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <motion.section
           variants={pageReveal}
-          whileHover={reduceMotion ? undefined : { y: -4, boxShadow: "0 24px 60px -32px rgba(15, 23, 42, 0.22)" }}
-          className="rounded-3xl border border-white/80 bg-white/72 p-6 shadow-lg backdrop-blur-sm transition-shadow"
+          className={`${panelClass} p-6`}
         >
           <div className="flex items-center gap-2 text-slate-700">
             <Server className="h-4 w-4 text-blue-500" />
@@ -117,7 +120,7 @@ export function ApiPresets() {
               onClick={() => void loadModels()}
               disabled={loading.models || loading.bootstrap}
               className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-              whileHover={reduceMotion ? undefined : { y: -2, scale: 1.01 }}
+              whileHover={reduceMotion ? undefined : { scale: 1.02 }}
               whileTap={reduceMotion ? undefined : { scale: 0.985 }}
             >
               {loading.models ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
@@ -127,7 +130,7 @@ export function ApiPresets() {
               onClick={() => void saveCodexPreset()}
               disabled={loading.codexSave}
               className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
-              whileHover={reduceMotion ? undefined : { y: -2, scale: 1.01 }}
+              whileHover={reduceMotion ? undefined : { scale: 1.02 }}
               whileTap={reduceMotion ? undefined : { scale: 0.985 }}
             >
               {loading.codexSave ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
@@ -137,7 +140,7 @@ export function ApiPresets() {
               onClick={() => void applyCodexPreset()}
               disabled={loading.codexApply}
               className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-              whileHover={reduceMotion ? undefined : { y: -2, scale: 1.01 }}
+              whileHover={reduceMotion ? undefined : { scale: 1.02 }}
               whileTap={reduceMotion ? undefined : { scale: 0.985 }}
             >
               {loading.codexApply ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
@@ -148,8 +151,7 @@ export function ApiPresets() {
 
         <motion.section
           variants={pageReveal}
-          whileHover={reduceMotion ? undefined : { y: -4, boxShadow: "0 24px 60px -32px rgba(15, 23, 42, 0.22)" }}
-          className="rounded-3xl border border-white/80 bg-white/72 p-6 shadow-lg backdrop-blur-sm transition-shadow"
+          className={`${panelClass} p-6`}
         >
           <div className="flex items-center gap-2 text-slate-700">
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -167,15 +169,14 @@ export function ApiPresets() {
           </div>
 
           <div className="mt-5 rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-cyan-50 p-5 text-sm leading-7 text-slate-600">
-            {bootstrap?.subtitle || t("bootstrapLoading")}
+            {t("apiWebTesterSubtitle")}
           </div>
         </motion.section>
       </div>
 
       <motion.section
         variants={pageReveal}
-        whileHover={reduceMotion ? undefined : { y: -4, boxShadow: "0 24px 60px -32px rgba(15, 23, 42, 0.22)" }}
-        className="rounded-3xl border border-white/80 bg-white/72 p-6 shadow-lg backdrop-blur-sm transition-shadow"
+        className={`${panelClass} p-6`}
       >
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -195,14 +196,12 @@ export function ApiPresets() {
 
               return (
                 <motion.article
-                  key={preset.providerId || preset.name}
-                  className={`rounded-3xl border p-5 shadow-sm transition ${
+                  key={`${preset.name}-${preset.providerId || "no-provider"}`}
+                  className={`flex h-full flex-col rounded-3xl border p-5 shadow-sm transition ${
                     isCurrent
                       ? "border-blue-200 bg-blue-50/80"
                       : "border-slate-200 bg-white/85"
                   }`}
-                  whileHover={reduceMotion ? undefined : { y: -4, scale: 1.01 }}
-                  transition={{ type: "spring", stiffness: 240, damping: 20 }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -222,23 +221,38 @@ export function ApiPresets() {
                     apikey: {preset.apiKey ? t("apiKeySaved") : t("apiKeyMissing")}
                   </div>
 
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-4 flex flex-1 items-end justify-between gap-3">
+                    <div className="flex flex-wrap gap-2">
+                      <motion.button
+                        onClick={() => applyPresetToForm(preset.name)}
+                        className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                        whileHover={reduceMotion ? undefined : { scale: 1.02 }}
+                        whileTap={reduceMotion ? undefined : { scale: 0.985 }}
+                      >
+                        {isCurrent ? t("loaded") : t("loadIntoForm")}
+                      </motion.button>
+                      <motion.button
+                        onClick={() => void applySavedPresetToCodex(preset.name)}
+                        disabled={loading.codexApply}
+                        className="rounded-2xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        whileHover={reduceMotion ? undefined : { scale: 1.02 }}
+                        whileTap={reduceMotion ? undefined : { scale: 0.985 }}
+                      >
+                        {t("loadAndApply")}
+                      </motion.button>
+                    </div>
+
                     <motion.button
-                      onClick={() => applyPresetToForm(preset.name)}
-                      className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                      whileHover={reduceMotion ? undefined : { y: -1 }}
-                      whileTap={reduceMotion ? undefined : { scale: 0.985 }}
+                      type="button"
+                      title={t("deletePreset")}
+                      aria-label={t("deletePreset")}
+                      onClick={() => void deleteSavedPreset(preset.name)}
+                      disabled={loading.codexDelete}
+                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center self-end rounded-2xl border border-transparent bg-transparent text-slate-400 transition hover:border-slate-200 hover:bg-white hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-60"
+                      whileHover={reduceMotion ? undefined : { scale: 1.04 }}
+                      whileTap={reduceMotion ? undefined : { scale: 0.96 }}
                     >
-                      {isCurrent ? t("loaded") : t("loadIntoForm")}
-                    </motion.button>
-                    <motion.button
-                      onClick={() => void applySavedPresetToCodex(preset.name)}
-                      disabled={loading.codexApply}
-                      className="rounded-2xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                      whileHover={reduceMotion ? undefined : { y: -1 }}
-                      whileTap={reduceMotion ? undefined : { scale: 0.985 }}
-                    >
-                      {t("loadAndApply")}
+                      {loading.codexDelete ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                     </motion.button>
                   </div>
                 </motion.article>
@@ -254,3 +268,7 @@ export function ApiPresets() {
     </motion.div>
   );
 }
+
+
+
+

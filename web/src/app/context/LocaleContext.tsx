@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+﻿import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 type Locale = "en" | "zh-CN";
 
@@ -10,6 +10,8 @@ const translations = {
     navTesting: "Testing",
     navConnection: "Connection",
     switchLanguage: "Switch to Chinese",
+    collapseSidebar: "Collapse sidebar",
+    expandSidebar: "Expand sidebar",
     connectionPresets: "Connection & Presets",
     connectionSettingsTitle: "Connection settings and Codex presets",
     connectionSettingsDescription:
@@ -31,6 +33,7 @@ const translations = {
     testConnectionAndLoadModels: "Test connection and load models",
     saveCodexPreset: "Save Codex preset",
     applyToCodex: "Apply to Codex",
+    deletePreset: "Delete",
     currentActiveCodexConfig: "Current active Codex config",
     notActive: "Not active",
     noConfigWrittenYet: "No config written yet",
@@ -46,7 +49,8 @@ const translations = {
     noPresetsSavedYet: "No Codex presets have been saved yet. Fill the form above, then save one.",
     bootstrapLoading: "Loading bootstrap info...",
     testingConsole: "Testing Console",
-    apiWebTester: "AI API Web Tester",
+    apiWebTester: "AI API Web Test Console",
+    apiWebTesterSubtitle: "Fill in the connection info once, then send the built-in text and image test requests.",
     loadingBootstrapData: "Loading bootstrap data...",
     clearResult: "Clear result",
     currentConnection: "Current connection",
@@ -90,6 +94,8 @@ const translations = {
     navTesting: "测试",
     navConnection: "连接",
     switchLanguage: "Switch to English",
+    collapseSidebar: "收起侧边栏",
+    expandSidebar: "展开侧边栏",
     connectionPresets: "连接与预设",
     connectionSettingsTitle: "连接设置与 Codex 预设",
     connectionSettingsDescription:
@@ -102,7 +108,7 @@ const translations = {
     currentState: "当前状态",
     loadedModels: "已加载模型",
     defaultImage: "默认图片",
-    ready: "已就绪",
+    ready: "就绪",
     loading: "加载中",
     selectedModel: "已选模型",
     notSelected: "未选择",
@@ -111,6 +117,7 @@ const translations = {
     testConnectionAndLoadModels: "测试连接并加载模型",
     saveCodexPreset: "保存 Codex 预设",
     applyToCodex: "应用到 Codex",
+    deletePreset: "删除",
     currentActiveCodexConfig: "当前生效的 Codex 配置",
     notActive: "未生效",
     noConfigWrittenYet: "尚未写入配置",
@@ -126,7 +133,8 @@ const translations = {
     noPresetsSavedYet: "还没有保存任何 Codex 预设。先填写上面的表单，再保存一个即可。",
     bootstrapLoading: "正在加载启动信息...",
     testingConsole: "测试控制台",
-    apiWebTester: "AI API 网页测试器",
+    apiWebTester: "AI API Web 测试台",
+    apiWebTesterSubtitle: "只填写连接信息，即可一键发送内置文本和图片测试请求。",
     loadingBootstrapData: "正在加载启动数据...",
     clearResult: "清空结果",
     currentConnection: "当前连接",
@@ -148,7 +156,7 @@ const translations = {
     defaultTestImage: "默认测试图片",
     loadingImage: "正在加载图片...",
     loadingDefaultVisionPrompt: "正在加载默认视觉提示词...",
-    visionHint: "这一阶段仍使用现有 Python 后端里的提示词和内置图片，先验证 React 到 BFF 的整条链路。",
+    visionHint: "这一阶段仍使用现有 Python 后端中的提示词和内置图片，先验证 React 到 BFF 的整条链路。",
     latestResult: "最近结果",
     mostRecentResponse: "最近一次响应",
     idle: "空闲",
@@ -156,7 +164,7 @@ const translations = {
     text: "文本",
     model: "模型",
     elapsed: "耗时",
-    totalTokens: "总 token",
+    totalTokens: "总 tokens",
     response: "响应内容",
     noTextContent: "模型没有返回文本内容。",
     rawPayload: "原始载荷",

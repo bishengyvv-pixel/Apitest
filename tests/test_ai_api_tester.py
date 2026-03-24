@@ -7,6 +7,7 @@ from packages.ai_api_tester.adaptor.impl.api_gateway import (
     UpstreamServiceError,
     _build_upstream_http_error,
     _parse_stream_events,
+    _parse_upstream_json_response,
     build_runtime,
     extract_assistant_text,
 )
@@ -71,6 +72,28 @@ class AiApiTesterTests(unittest.TestCase):
 
         self.assertEqual(extract_assistant_text(payload), "Hello, world")
         self.assertEqual(payload["usage"]["total_tokens"], 20)
+
+    def test_parse_upstream_json_response_reports_empty_body(self):
+        """Empty responses should become actionable upstream errors."""
+        runtime = build_runtime({"base_url": "https://example.com/v1"})
+
+        with self.assertRaises(UpstreamServiceError) as error_context:
+            _parse_upstream_json_response(runtime, "", "application/json", "/models")
+
+        self.assertEqual(error_context.exception.diagnostic_code, "empty_response_body")
+        self.assertEqual(error_context.exception.details["path"], "/models")
+        self.assertIn("baseurl", str(error_context.exception))
+
+    def test_parse_upstream_json_response_reports_invalid_json_body(self):
+        """Non-JSON responses should point users back to the API base URL."""
+        runtime = build_runtime({"base_url": "https://example.com/v1"})
+
+        with self.assertRaises(UpstreamServiceError) as error_context:
+            _parse_upstream_json_response(runtime, "<html>login</html>", "text/html", "/models")
+
+        self.assertEqual(error_context.exception.diagnostic_code, "invalid_json_response")
+        self.assertEqual(error_context.exception.details["content_type"], "text/html")
+        self.assertIn("/v1", str(error_context.exception))
 
     def test_statistics_are_aggregated_from_history(self):
         """统计结果应正确计算平均耗时和 token。"""

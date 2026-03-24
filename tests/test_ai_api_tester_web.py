@@ -102,6 +102,25 @@ class WebServiceTests(unittest.TestCase):
         self.assertEqual(status_code, 200)
         self.assertEqual(payload["active"]["name"], "preset-a")
 
+    @patch("packages.ai_api_tester_web.product.impl.service.remove_codex_preset")
+    def test_handle_api_request_can_delete_codex_preset(self, mock_remove_codex_preset):
+        """删除 Codex 预设的路由应返回更新结果。"""
+        mock_remove_codex_preset.return_value = {
+            "message": "已删除",
+            "deleted_name": "preset-a",
+            "presets": [{"name": "preset-b"}],
+        }
+
+        status_code, payload = handle_api_request(
+            "DELETE",
+            "/api/codex-presets",
+            {"name": "preset-a"},
+            {"default_image_path": "unused"},
+        )
+
+        self.assertEqual(status_code, 200)
+        self.assertEqual(payload["deleted_name"], "preset-a")
+
     @patch("packages.ai_api_tester_web.product.impl.service.run_default_text")
     def test_handle_api_request_maps_upstream_error_to_502(self, mock_run_default_text):
         """上游故障应返回 502 与诊断信息。"""
@@ -126,3 +145,4 @@ class WebServiceTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

@@ -158,7 +158,7 @@ def extract_assistant_text(payload):
 
 
 def _request_json(runtime, method, path, payload=None):
-    """通过 urllib 发起 HTTP 请求。"""
+    """Send an HTTP request via urllib."""
     url = runtime["base_url"] + path
     body = None
     headers = {
@@ -177,20 +177,21 @@ def _request_json(runtime, method, path, payload=None):
     try:
         with URL_REQUEST.urlopen(request, timeout=runtime["timeout_seconds"]) as response:
             raw_body = response.read().decode("utf-8")
-            return JSON.loads(raw_body)
+            content_type = str(response.headers.get("Content-Type") or "").lower()
+            return _parse_upstream_json_response(runtime, raw_body, content_type, path)
     except URL_ERROR.HTTPError as error:
         error_body = error.read().decode("utf-8", errors="replace")
         raise _build_upstream_http_error(runtime, error, error_body) from error
     except URL_ERROR.URLError as error:
         raise UpstreamServiceError(
-            f"网络请求失败: {error.reason}",
+            f"\u7f51\u7edc\u8bf7\u6c42\u5931\u8d25: {error.reason}",
             diagnostic_code="network_request_failed",
             details={"reason": str(error.reason)},
         ) from error
 
 
 def _request_chat_completion(runtime, payload):
-    """???????????? JSON ? SSE ?????"""
+    """Send a chat completion request and support JSON or SSE responses."""
     url = runtime["base_url"] + DEFAULT_CHAT_COMPLETIONS_PATH
     headers = {
         "Accept": "application/json",
@@ -209,20 +210,25 @@ def _request_chat_completion(runtime, payload):
             content_type = str(response.headers.get("Content-Type") or "").lower()
             if "text/event-stream" in content_type or _looks_like_sse_payload(raw_body):
                 return _parse_stream_events(raw_body)
-            return JSON.loads(raw_body)
+            return _parse_upstream_json_response(
+                runtime,
+                raw_body,
+                content_type,
+                DEFAULT_CHAT_COMPLETIONS_PATH,
+            )
     except URL_ERROR.HTTPError as error:
         error_body = error.read().decode("utf-8", errors="replace")
         raise _build_upstream_http_error(runtime, error, error_body) from error
     except URL_ERROR.URLError as error:
         raise UpstreamServiceError(
-            f"??????: {error.reason}",
+            f"\u7f51\u7edc\u8bf7\u6c42\u5931\u8d25: {error.reason}",
             diagnostic_code="network_request_failed",
             details={"reason": str(error.reason)},
         ) from error
 
 
 def _looks_like_sse_payload(raw_body):
-    """??????????????? SSE?"""
+    """Detect whether a response body looks like SSE data."""
     for line in str(raw_body or "").splitlines():
         stripped = line.strip()
         if stripped:
@@ -231,7 +237,7 @@ def _looks_like_sse_payload(raw_body):
 
 
 def _parse_stream_events(raw_body):
-    """? SSE ????????????????????"""
+    """Parse SSE chunks into a regular OpenAI-style payload."""
     text_chunks = []
     usage = {}
     data_lines = []
@@ -291,7 +297,7 @@ def _parse_stream_events(raw_body):
 
 
 def _extract_text_parts(content):
-    """?????????????"""
+    """Extract text from string or rich-content response parts."""
     if isinstance(content, str):
         text = content.strip()
         return [text] if text else []
@@ -407,6 +413,40 @@ def _parse_json_object(raw_text):
     return {}
 
 
+def _parse_upstream_json_response(runtime, raw_body, content_type, path):
+    """Parse upstream success responses and raise actionable JSON diagnostics."""
+    text = str(raw_body or "")
+    if not text.strip():
+        raise UpstreamServiceError(
+            "上游接口返回空响应，无法解析 JSON。请确认 baseurl 指向的是供应商正式提供的 API 地址。",
+            diagnostic_code="empty_response_body",
+            details={
+                "host": _extract_host(runtime.get("base_url") or ""),
+                "path": path,
+                "content_type": str(content_type or ""),
+            },
+        )
+
+    try:
+        return JSON.loads(text)
+    except (TypeError, ValueError) as error:
+        host = _extract_host(runtime.get("base_url") or "")
+        preview = text.strip().replace("\r", " ").replace("\n", " ")
+        if len(preview) > 200:
+            preview = preview[:200].rstrip() + "..."
+        raise UpstreamServiceError(
+            "上游接口返回的内容不是合法 JSON。请优先确认 baseurl 填的是供应商文档中的 `/v1` API 地址，而不是站点首页、代理页或登录页。",
+            diagnostic_code="invalid_json_response",
+            details={
+                "host": host,
+                "path": path,
+                "content_type": str(content_type or ""),
+                "body_preview": preview,
+                "parse_error": str(error),
+            },
+        ) from error
+
+
 def _extract_host(base_url):
     """从 base_url 中提取主机名，便于诊断输出。"""
     text = str(base_url or "").strip()
@@ -445,3 +485,4 @@ def _coerce_positive_int(value, default_value):
     except (TypeError, ValueError):
         pass
     return default_value
+

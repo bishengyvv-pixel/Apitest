@@ -5,6 +5,7 @@ from packages.ai_api_tester.adaptor.impl.api_gateway import UpstreamServiceError
 from ...adaptor.config.defaults import DEFAULT_WEB_HOST, DEFAULT_WEB_PORT
 from ...adaptor.impl.codex_config_store import (
     apply_codex_preset,
+    delete_codex_preset,
     load_codex_active_settings,
     load_codex_presets,
     upsert_codex_preset,
@@ -66,6 +67,8 @@ def handle_api_request(method, path, payload, app_context):
             return 200, run_default_vision(payload, app_context)
         if method == "POST" and path == "/api/codex-presets":
             return 200, save_codex_preset(payload)
+        if method == "DELETE" and path == "/api/codex-presets":
+            return 200, remove_codex_preset(payload)
         if method == "POST" and path == "/api/codex-apply":
             return 200, apply_selected_codex_preset(payload)
         return 404, {"error": "未找到 API 路径。"}
@@ -135,6 +138,12 @@ def save_codex_preset(payload):
     """保存一个 Codex 预设。"""
     preset = extract_codex_preset(payload)
     return upsert_codex_preset(preset)
+
+
+def remove_codex_preset(payload):
+    """删除一个 Codex 预设。"""
+    source = payload or {}
+    return delete_codex_preset(source.get("name"))
 
 
 def apply_selected_codex_preset(payload):
@@ -226,3 +235,6 @@ def _to_port(value):
     except (TypeError, ValueError):
         return 0
     return 0
+
+
+

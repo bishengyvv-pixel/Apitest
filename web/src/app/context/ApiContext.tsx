@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+﻿import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 export type ApiForm = {
@@ -59,6 +59,7 @@ type LoadingState = {
   models: boolean;
   codexSave: boolean;
   codexApply: boolean;
+  codexDelete: boolean;
   text: boolean;
   vision: boolean;
 };
@@ -78,6 +79,7 @@ interface ApiContextType {
   saveCodexPreset: () => Promise<void>;
   applyCodexPreset: () => Promise<void>;
   applySavedPresetToCodex: (presetName: string) => Promise<void>;
+  deleteSavedPreset: (presetName: string) => Promise<void>;
   sendDefaultRequest: (kind: "text" | "vision") => Promise<void>;
   clearResult: () => void;
   clearError: () => void;
@@ -97,6 +99,7 @@ const defaultLoadingState: LoadingState = {
   models: false,
   codexSave: false,
   codexApply: false,
+  codexDelete: false,
   text: false,
   vision: false,
 };
@@ -280,6 +283,43 @@ export function ApiProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const deleteSavedPreset = async (presetName: string) => {
+    const normalizedName = presetName.trim();
+    if (!normalizedName) {
+      return;
+    }
+
+    setLoading((current) => ({ ...current, codexDelete: true }));
+    try {
+      const payload = await fetchJson("/api/codex-presets", {
+        method: "DELETE",
+        body: JSON.stringify({ name: normalizedName }),
+      });
+      const nextPresets = normalizePresetList(payload.presets);
+      setCodexPresets(nextPresets);
+      setErrorMessage("");
+      setForm((current) => {
+        if (current.presetName !== normalizedName) {
+          return current;
+        }
+
+        const fallbackPreset = nextPresets[0];
+        return {
+          ...current,
+          presetName: fallbackPreset?.name || "",
+          baseUrl: fallbackPreset?.baseUrl || "",
+          apiKey: fallbackPreset?.apiKey || "",
+        };
+      });
+      toast.success(payload.message || "Preset deleted.");
+    } catch (error) {
+      const message = getErrorMessage(error);
+      setErrorMessage(message);
+      toast.error(message);
+    } finally {
+      setLoading((current) => ({ ...current, codexDelete: false }));
+    }
+  };
   const sendDefaultRequest = async (kind: "text" | "vision") => {
     if (!ensureConnectionReady(form, setErrorMessage)) {
       return;
@@ -338,6 +378,7 @@ export function ApiProvider({ children }: { children: ReactNode }) {
         saveCodexPreset,
         applyCodexPreset,
         applySavedPresetToCodex,
+        deleteSavedPreset,
         sendDefaultRequest,
         clearResult,
         clearError,
@@ -497,9 +538,26 @@ async function fetchJson(url: string, options: RequestInit) {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
-  const payload = await response.json();
+  const rawText = await response.text();
+  let payload: any = {};
+
+  if (rawText.trim()) {
+    try {
+      payload = JSON.parse(rawText);
+    } catch {
+      if (!response.ok) {
+        throw new Error(rawText.trim() || `Request failed with HTTP ${response.status}.`);
+      }
+      throw new Error(
+        "Service returned a non-JSON response. Check whether baseurl points to a valid `/v1` API endpoint.",
+      );
+    }
+  }
+
   if (!response.ok) {
-    throw new Error(toCleanText(payload?.error) || "Request failed.");
+    throw new Error(
+      toCleanText(payload?.error) || rawText.trim() || `Request failed with HTTP ${response.status}.`,
+    );
   }
   return payload;
 }
@@ -517,3 +575,4 @@ function toCleanText(value: unknown) {
   }
   return String(value).trim();
 }
+
