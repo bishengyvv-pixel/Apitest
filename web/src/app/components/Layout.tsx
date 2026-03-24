@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router";
-import { Settings, MessageSquare, ChevronRight, ChevronLeft, Languages, Zap } from "lucide-react";
+import { Settings, MessageSquare, ChevronRight, Languages, Zap } from "lucide-react";
 import { useLocale } from "../context/LocaleContext";
 
 export function Layout() {
@@ -34,22 +34,6 @@ export function Layout() {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-slate-50 text-slate-800 font-sans">
-      <motion.button
-        type="button"
-        onClick={toggleLocale}
-        title={t("switchLanguage")}
-        aria-label={t("switchLanguage")}
-        className="absolute left-4 top-4 z-30 inline-flex items-center gap-2 rounded-2xl border border-white/80 bg-white/90 px-3 py-2 text-sm font-semibold tracking-[-0.02em] text-slate-700 shadow-md md:left-6 md:top-6"
-        initial={reduceMotion ? false : { opacity: 0, y: -14 }}
-        animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: "easeOut" }}
-        whileHover={reduceMotion ? undefined : { scale: 1.03 }}
-        whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-      >
-        <Languages className="h-4 w-4 text-blue-500" />
-        <span>{locale === "en" ? "EN" : "ZH"}</span>
-      </motion.button>
-
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.86)_0%,rgba(248,250,252,0.94)_52%,rgba(255,255,255,1)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_16%,rgba(191,219,254,0.34),transparent_28%),radial-gradient(circle_at_86%_18%,rgba(207,250,254,0.26),transparent_24%),radial-gradient(circle_at_52%_82%,rgba(254,243,199,0.18),transparent_26%)]" />
@@ -74,12 +58,30 @@ export function Layout() {
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
           className="relative z-20 flex h-screen flex-col overflow-hidden border-l border-white/80 bg-white/86 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.05)]"
         >
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 overflow-hidden border-b border-slate-200/50 p-4">
-            <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+          <div
+            className={`grid grid-cols-[minmax(0,1fr)_auto] items-center overflow-hidden border-b border-slate-200/50 transition-[padding,gap] duration-300 ${
+              isSidebarOpen ? "gap-3 p-4" : "gap-0 px-2 py-3"
+            }`}
+          >
+            <div
+              className={`flex min-w-0 items-center overflow-hidden transition-[gap] duration-300 ${
+                isSidebarOpen ? "gap-2" : "gap-0"
+              }`}
+            >
               <motion.div
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-500 to-indigo-400 shadow-inner"
-                animate={reduceMotion ? undefined : { rotate: [0, -7, 0, 7, 0] }}
-                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                animate={
+                  reduceMotion
+                    ? undefined
+                    : {
+                        rotate: isSidebarOpen ? [0, -7, 0, 7, 0] : 0,
+                        opacity: isSidebarOpen ? 1 : 0,
+                        scale: isSidebarOpen ? 1 : 0.82,
+                        width: isSidebarOpen ? 32 : 0,
+                        marginRight: isSidebarOpen ? 0 : -8,
+                      }
+                }
+                transition={{ duration: 0.3, ease: "easeOut", rotate: { duration: 8, repeat: Infinity, ease: "easeInOut" } }}
               >
                 <Zap className="h-4 w-4 text-white" />
               </motion.div>
@@ -98,22 +100,52 @@ export function Layout() {
               </motion.span>
             </div>
 
-            <motion.button
-              type="button"
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              aria-label={isSidebarOpen ? t("collapseSidebar") : t("expandSidebar")}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200/70 bg-slate-50/90 text-slate-500 shadow-sm transition-colors hover:bg-white"
-              whileHover={reduceMotion ? undefined : { scale: 1.04 }}
-              whileTap={reduceMotion ? undefined : { scale: 0.95 }}
-            >
-              <motion.div
-                initial={false}
-                animate={{ rotate: isSidebarOpen ? 0 : 180 }}
-                transition={{ duration: 0.24, ease: "easeOut" }}
+            <div className={`flex items-center justify-end ${isSidebarOpen ? "gap-2" : "gap-1.5"}`}>
+              <motion.button
+                type="button"
+                onClick={toggleLocale}
+                title={t("switchLanguage")}
+                aria-label={t("switchLanguage")}
+                className={`inline-flex shrink-0 items-center justify-center rounded-xl border border-slate-200/70 bg-slate-50/90 font-semibold tracking-[-0.02em] text-slate-600 shadow-sm transition-colors hover:bg-white ${
+                  isSidebarOpen ? "h-9 px-2.5 text-xs" : "h-7 w-7 text-[10px]"
+                }`}
+                whileHover={reduceMotion ? undefined : { scale: 1.04 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.95 }}
               >
-                <ChevronRight className="h-4 w-4" />
-              </motion.div>
-            </motion.button>
+                <Languages className={`${isSidebarOpen ? "h-3.5 w-3.5" : "h-3 w-3"}`} />
+                <motion.span
+                  initial={false}
+                  animate={{
+                    opacity: isSidebarOpen ? 1 : 0,
+                    maxWidth: isSidebarOpen ? 32 : 0,
+                    marginLeft: isSidebarOpen ? 6 : 0,
+                  }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="overflow-hidden whitespace-nowrap"
+                >
+                  {locale === "en" ? "EN" : "ZH"}
+                </motion.span>
+              </motion.button>
+
+              <motion.button
+                type="button"
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                aria-label={isSidebarOpen ? t("collapseSidebar") : t("expandSidebar")}
+                className={`flex shrink-0 items-center justify-center rounded-xl border border-slate-200/70 bg-slate-50/90 text-slate-500 shadow-sm transition-colors hover:bg-white ${
+                  isSidebarOpen ? "h-9 w-9" : "h-7 w-7"
+                }`}
+                whileHover={reduceMotion ? undefined : { scale: 1.04 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.95 }}
+              >
+                <motion.div
+                  initial={false}
+                  animate={{ rotate: isSidebarOpen ? 0 : 180 }}
+                  transition={{ duration: 0.24, ease: "easeOut" }}
+                >
+                  <ChevronRight className={`${isSidebarOpen ? "h-4 w-4" : "h-3.5 w-3.5"}`} />
+                </motion.div>
+              </motion.button>
+            </div>
           </div>
 
           <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-6">

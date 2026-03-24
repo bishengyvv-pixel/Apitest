@@ -1,89 +1,144 @@
-﻿# AI API 接口测试工具
+# AI API 测试工具
 
-这是一个基于 Python 编写的 OpenAI 兼容 API 测试工具，遵循仓库 `docs/` 中的包结构和依赖收口规范实现。
+轻量、直接、可落地的 OpenAI 兼容接口测试项目。
 
-## 功能
+适合用来快速验证：
 
-- 基础文本对话
-- 图片多模态对话
-- 模型列表查询
-- React Web 图形界面
-- 会话平均时长统计
-- Token 消耗统计
+- 接口地址是否可用
+- API Key 是否有效
+- 模型列表是否正常返回
+- 文本与多模态请求是否能稳定跑通
 
-## 运行方式
+项目当前保留两种使用方式：
 
-建议全程使用 `uv`：
+- `Web`：本地启动一个简洁的测试页面
+- `CLI`：直接用命令行发请求、查模型、看统计
+
+## Preview
+
+> 预览图占位
+>
+> 建议将 Web 界面截图放在 `docs/assets/web-preview.png`。
+>
+> 推荐内容：
+> - 左侧导航
+> - 首页测试卡片
+> - 预设或响应区域
+>
+> 图片就位后，可在这里插入：
+>
+> `![AI API Tester Web Preview](./docs/assets/web-preview.png)`
+
+## Quick Start
+
+建议全程使用 `uv`。
 
 ```bash
 uv run python main.py web
+```
+
+启动后访问：
+
+```text
+http://127.0.0.1:8765
+```
+
+如果你更偏向命令行：
+
+```bash
 uv run python main.py models --base-url https://api.openai.com/v1 --api-key <YOUR_KEY>
 uv run python main.py chat --model gpt-4o-mini --prompt "你好，请介绍一下你自己"
 uv run python main.py vision --model gpt-4.1-mini --prompt "请描述这张图片" --image ./demo.png
 uv run python main.py stats
 ```
 
-## Web UI 说明
+## Why This Project
 
-运行 `uv run python main.py web` 后，会启动本地 HTTP 服务，默认地址为：
+- 少填参数：Web 页面只保留连接测试真正需要的信息
+- 上手快：开箱即可验证文本、多模态、模型列表
+- 结构清晰：项目按分层依赖规范组织，便于继续扩展
+- 双模式：适合手动测试，也适合脚本化调用
 
-- `http://127.0.0.1:8765`
+## Web Mode
 
-新的 Web GUI 只要求用户填写：
+Web 页面主要面向“连通性验证”和“快速回归”。
 
-- `baseurl`：必填
-- `apikey`：必填
-- `模型列表`：可选，点击“加载模型列表”后可选择
+你只需要关注：
 
-页面不再要求用户手动填写 prompt、上传图片或填写复杂参数，而是直接提供：
+- `baseurl`
+- `apikey`
+- `模型列表`
 
-- `发送默认文本`：发送内置文本 prompt，用于快速验证基础对话接口
-- `发送默认图片`：发送内置测试图片和固定 prompt，用于快速验证多模态接口
+页面内置了两类测试动作：
 
-默认图片资源位于：
+- `发送默认文本`：快速验证基础对话接口
+- `发送默认图片`：快速验证多模态接口
 
-- `packages/ai_api_tester_web/assets/default-vision.png`
+默认测试图片位于：
 
-## 环境变量
+`packages/ai_api_tester_web/assets/default-vision.png`
 
-- `AI_API_BASE_URL`: 接口基础地址
-- `AI_API_KEY`: API Key
-- `AI_DEFAULT_MODEL`: 默认模型名称
-- `AI_HISTORY_PATH`: 历史会话文件路径
-- `AI_TIMEOUT_SECONDS`: 请求超时时间
-- `AI_MAX_TOKENS`: 单次请求最大 token 数
-- `AI_SYSTEM_PROMPT`: 默认系统提示词
-- `AI_HTTP_USER_AGENT`: 自定义 HTTP `User-Agent`
+## CLI Commands
 
-## 常见故障排查
+```bash
+uv run python main.py web
+uv run python main.py models
+uv run python main.py chat --prompt "hello"
+uv run python main.py vision --prompt "describe this image" --image ./demo.png
+uv run python main.py stats
+```
 
-### Web 中出现 `HTTP 403 / Cloudflare Error 1010 / browser_signature_banned`
+可配的常用参数：
 
-这类错误通常表示：
+- `--base-url`
+- `--api-key`
+- `--model`
+- `--timeout`
+- `--max-tokens`
+- `--system-prompt`
+- `--user-agent`
+- `--json`
 
-- 被拦截的是你填写的上游接口域名，不是本地 `web` 页面
-- 往往不是 `apikey` 错误，而是上游站点把当前客户端签名、IP 或访问方式判定为不允许
-- 某些中转站、镜像站或带 Cloudflare 防护的网关并不接受通用服务端 API 调用
+## Environment
 
-建议按下面顺序排查：
+- `AI_API_BASE_URL`
+- `AI_API_KEY`
+- `AI_DEFAULT_MODEL`
+- `AI_HISTORY_PATH`
+- `AI_TIMEOUT_SECONDS`
+- `AI_MAX_TOKENS`
+- `AI_SYSTEM_PROMPT`
+- `AI_HTTP_USER_AGENT`
 
-1. 确认 `baseurl` 是否是供应商正式文档提供的 API 根地址，而不是站点首页、代理页或临时中转域名
-2. 先用命令行测试同一地址，例如 `uv run python main.py models --base-url <BASE_URL> --api-key <KEY>`
-3. 如果站点要求客户端标识，启动时显式设置 `AI_HTTP_USER_AGENT` 或传 `--user-agent`
-4. 若仍返回 `browser_signature_banned`，不要重复重试，应联系站点方放行当前客户端签名或出口 IP
-5. 对 OpenAI 兼容接口，优先使用供应商明确支持的 `/v1` API 域名
+## History
 
-## 历史统计
+成功请求会记录到：
 
-每次成功请求都会记录到 `data/ai_api_tester_history.jsonl`，`stats` 命令会基于该文件计算：
+`data/ai_api_tester_history.jsonl`
+
+`stats` 会基于该文件输出：
 
 - 会话总数
 - 平均会话时长
 - 累计会话时长
-- prompt / completion / total token
-- 按模型维度的会话数与 token 消耗
-- 最近 20 次会话摘要
+- Token 消耗
+- 按模型聚合的统计结果
 
-## 说明
+## FAQ
 
-当前 Web 界面会由本地构建产物提供，开发态通过 Vite 代理到 Python 后端。
+### Web 页面报 `HTTP 403` 或 `browser_signature_banned`
+
+这通常不是本地页面的问题，而是上游接口拒绝了当前请求来源。
+
+优先检查：
+
+1. `baseurl` 是否为供应商正式提供的 API 根地址
+2. 同一组参数能否先在 CLI 跑通
+3. 是否需要显式传入 `--user-agent`
+4. 目标站点是否限制当前出口 IP、客户端签名或访问方式
+
+## Development Notes
+
+- Web 开发模式使用 Vite，并将 `/api/*` 代理到本地 Python 服务
+- 生产构建产物输出到 `packages/ai_api_tester_web/assets`
+- 设计与分层说明可继续查看 [`docs/README.md`](docs/README.md)
