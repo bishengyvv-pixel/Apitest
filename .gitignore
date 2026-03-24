@@ -46,5 +46,4 @@ packages/ai_api_tester_web/assets/index-*.css
 
 # Local runtime data
 data/ai_api_tester_history.jsonl
-data/ai_api_tester_gui_config.json
 data/codex_presets.json

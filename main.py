@@ -50,12 +50,7 @@ def build_parser():
     )
 
     subparsers.add_parser("stats", help="查看历史会话统计信息。", parents=[shared_parser])
-    subparsers.add_parser(
-        "gui",
-        help="启动 Web 图形界面。",
-        aliases=["web"],
-        parents=[shared_parser],
-    )
+    subparsers.add_parser("web", help="启动 Web 图形界面。", parents=[shared_parser])
     return parser
 
 
@@ -200,7 +195,7 @@ def main():
     args = parser.parse_args()
 
     try:
-        if args.command in {"gui", "web"}:
+        if args.command == "web":
             from packages.ai_api_tester_web.shell.exports import launch_web_app
 
             return launch_web_app(build_settings(args))

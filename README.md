@@ -16,18 +16,16 @@
 建议全程使用 `uv`：
 
 ```bash
-uv run python main.py gui
 uv run python main.py web
-uv run python main.py web --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
 uv run python main.py models --base-url https://api.openai.com/v1 --api-key <YOUR_KEY>
 uv run python main.py chat --model gpt-4o-mini --prompt "你好，请介绍一下你自己"
 uv run python main.py vision --model gpt-4.1-mini --prompt "请描述这张图片" --image ./demo.png
 uv run python main.py stats
 ```
 
-## Web GUI 说明
+## Web UI 说明
 
-运行 `uv run python main.py gui` 或 `uv run python main.py web` 后，会启动本地 HTTP 服务，默认地址为：
+运行 `uv run python main.py web` 后，会启动本地 HTTP 服务，默认地址为：
 
 - `http://127.0.0.1:8765`
 
@@ -88,5 +86,4 @@ uv run python main.py stats
 
 ## 说明
 
-当前 Web GUI 的 React、ReactDOM 和 Babel 通过 CDN 加载，因此首次打开页面需要可以访问外网 CDN。
-
+当前 Web 界面会由本地构建产物提供，开发态通过 Vite 代理到 Python 后端。
