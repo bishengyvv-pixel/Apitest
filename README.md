@@ -16,18 +16,9 @@
 
 ## Preview
 
-> 预览图占位
->
-> 建议将 Web 界面截图放在 `docs/assets/web-preview.png`。
->
-> 推荐内容：
-> - 左侧导航
-> - 首页测试卡片
-> - 预设或响应区域
->
-> 图片就位后，可在这里插入：
->
-> `![AI API Tester Web Preview](./docs/assets/web-preview.png)`
+![AI API Tester Web Preview](./docs/assets/web-preview.png)
+
+Web 界面预览，建议优先展示左侧导航、测试卡片和响应区域。
 
 ## Quick Start
 
