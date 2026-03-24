@@ -1,8 +1,17 @@
 ﻿"""Web 产品服务：负责 HTTP 路由与页面启动。"""
 
+import re
+
 from packages.ai_api_tester.adaptor.impl.api_gateway import UpstreamServiceError
 
-from ...adaptor.config.defaults import DEFAULT_WEB_HOST, DEFAULT_WEB_PORT
+from ...adaptor.config.defaults import (
+    CODEX_APPROVAL_POLICY_OPTIONS,
+    CODEX_SANDBOX_MODE_OPTIONS,
+    DEFAULT_CODEX_APPROVAL_POLICY,
+    DEFAULT_CODEX_SANDBOX_MODE,
+    DEFAULT_WEB_HOST,
+    DEFAULT_WEB_PORT,
+)
 from ...adaptor.impl.codex_config_store import (
     apply_codex_preset,
     delete_codex_preset,
@@ -19,6 +28,12 @@ from ...product.config.defaults import (
     DEFAULT_VISION_IMAGE_NAME,
     DEFAULT_VISION_PROMPT,
 )
+
+
+PRESET_NAME_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
+PRESET_NAME_MESSAGE = "Preset name only supports English letters, numbers, underscore, and hyphen."
+APPROVAL_POLICY_MESSAGE = 'approval_policy only supports "never" and "on-request".'
+SANDBOX_MODE_MESSAGE = 'sandbox_mode only supports "danger-full-access" and "workspace-write".'
 
 
 def launch_web_app(settings=None):
@@ -196,21 +211,31 @@ def extract_connection_settings(payload):
 
 
 def extract_codex_preset(payload):
-    """校验并提取 Codex 预设字段。"""
+    """Validate one Codex preset payload from the Web client."""
     source = payload or {}
     name = _clean_text(source.get("name"))
     base_url = _clean_text(source.get("base_url"))
     api_key = _clean_text(source.get("api_key"))
+    approval_policy = _clean_text(source.get("approval_policy")) or DEFAULT_CODEX_APPROVAL_POLICY
+    sandbox_mode = _clean_text(source.get("sandbox_mode")) or DEFAULT_CODEX_SANDBOX_MODE
     if not name:
-        raise ValueError("预设名称为必填项。")
+        raise ValueError("Preset name is required.")
+    if not PRESET_NAME_PATTERN.fullmatch(name):
+        raise ValueError(PRESET_NAME_MESSAGE)
     if not base_url:
-        raise ValueError("baseurl 为必填项。")
+        raise ValueError("base_url is required.")
     if not api_key:
-        raise ValueError("apikey 为必填项。")
+        raise ValueError("api_key is required.")
+    if approval_policy not in CODEX_APPROVAL_POLICY_OPTIONS:
+        raise ValueError(APPROVAL_POLICY_MESSAGE)
+    if sandbox_mode not in CODEX_SANDBOX_MODE_OPTIONS:
+        raise ValueError(SANDBOX_MODE_MESSAGE)
     return {
         "name": name,
         "base_url": base_url,
         "api_key": api_key,
+        "approval_policy": approval_policy,
+        "sandbox_mode": sandbox_mode,
     }
 
 

@@ -5,6 +5,8 @@ export type ApiForm = {
   presetName: string;
   baseUrl: string;
   apiKey: string;
+  approvalPolicy: string;
+  sandboxMode: string;
   model: string;
 };
 
@@ -18,6 +20,8 @@ export type CodexPreset = {
   name: string;
   baseUrl: string;
   apiKey: string;
+  approvalPolicy: string;
+  sandboxMode: string;
   providerId: string;
 };
 
@@ -26,6 +30,8 @@ export type CodexActive = {
   providerId: string;
   baseUrl: string;
   apiKey: string;
+  approvalPolicy: string;
+  sandboxMode: string;
   configPath: string;
   authPath: string;
 };
@@ -87,12 +93,22 @@ interface ApiContextType {
 
 const ApiContext = createContext<ApiContextType | undefined>(undefined);
 
+const CODEX_APPROVAL_POLICY_OPTIONS = ["never", "on-request"] as const;
+const CODEX_SANDBOX_MODE_OPTIONS = ["danger-full-access", "workspace-write"] as const;
+const DEFAULT_APPROVAL_POLICY = "on-request";
+const DEFAULT_SANDBOX_MODE = "workspace-write";
+
 const defaultForm: ApiForm = {
   presetName: "",
   baseUrl: "",
   apiKey: "",
+  approvalPolicy: DEFAULT_APPROVAL_POLICY,
+  sandboxMode: DEFAULT_SANDBOX_MODE,
   model: "",
 };
+
+const PRESET_NAME_PATTERN = /^[A-Za-z0-9_-]+$/;
+const PRESET_NAME_MESSAGE = "Preset name only supports English letters, numbers, underscore, and hyphen.";
 
 const defaultLoadingState: LoadingState = {
   bootstrap: true,
@@ -127,9 +143,11 @@ export function ApiProvider({ children }: { children: ReactNode }) {
         setCodexActive(nextActive);
         setForm((current) => ({
           ...current,
-          presetName: current.presetName || nextActive?.name || "",
+          presetName: sanitizePresetName(current.presetName || nextActive?.name || ""),
           baseUrl: current.baseUrl || nextActive?.baseUrl || "",
           apiKey: current.apiKey || nextActive?.apiKey || "",
+          approvalPolicy: nextActive?.approvalPolicy || current.approvalPolicy,
+          sandboxMode: nextActive?.sandboxMode || current.sandboxMode,
         }));
       } catch (error) {
         const message = getErrorMessage(error);
@@ -144,7 +162,8 @@ export function ApiProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateForm = (field: keyof ApiForm, value: string) => {
-    setForm((current) => ({ ...current, [field]: value }));
+    const nextValue = field === "presetName" ? sanitizePresetName(value) : value;
+    setForm((current) => ({ ...current, [field]: nextValue }));
     if (errorMessage) {
       setErrorMessage("");
     }
@@ -161,6 +180,8 @@ export function ApiProvider({ children }: { children: ReactNode }) {
       presetName: preset.name,
       baseUrl: preset.baseUrl,
       apiKey: preset.apiKey,
+      approvalPolicy: preset.approvalPolicy,
+      sandboxMode: preset.sandboxMode,
     }));
     setErrorMessage("");
     toast.success(`Preset loaded: ${preset.name}`);
@@ -258,6 +279,8 @@ export function ApiProvider({ children }: { children: ReactNode }) {
       presetName: preset.name,
       baseUrl: preset.baseUrl,
       apiKey: preset.apiKey,
+      approvalPolicy: preset.approvalPolicy,
+      sandboxMode: preset.sandboxMode,
     }));
 
     setLoading((current) => ({ ...current, codexApply: true }));
@@ -268,6 +291,8 @@ export function ApiProvider({ children }: { children: ReactNode }) {
           name: preset.name,
           base_url: preset.baseUrl,
           api_key: preset.apiKey,
+          approval_policy: preset.approvalPolicy,
+          sandbox_mode: preset.sandboxMode,
         }),
       });
       setCodexPresets(normalizePresetList(payload.presets));
@@ -309,6 +334,8 @@ export function ApiProvider({ children }: { children: ReactNode }) {
           presetName: fallbackPreset?.name || "",
           baseUrl: fallbackPreset?.baseUrl || "",
           apiKey: fallbackPreset?.apiKey || "",
+          approvalPolicy: fallbackPreset?.approvalPolicy || DEFAULT_APPROVAL_POLICY,
+          sandboxMode: fallbackPreset?.sandboxMode || DEFAULT_SANDBOX_MODE,
         };
       });
       toast.success(payload.message || "Preset deleted.");
@@ -414,6 +441,11 @@ function ensurePresetReady(form: ApiForm, setErrorMessage: (message: string) => 
     toast.error(message);
     return false;
   }
+  if (!isValidPresetName(form.presetName)) {
+    setErrorMessage(PRESET_NAME_MESSAGE);
+    toast.error(PRESET_NAME_MESSAGE);
+    return false;
+  }
   return true;
 }
 
@@ -426,9 +458,11 @@ function buildConnectionPayload(form: ApiForm) {
 
 function buildPresetPayload(form: ApiForm) {
   return {
-    name: form.presetName.trim(),
+    name: sanitizePresetName(form.presetName).trim(),
     base_url: form.baseUrl.trim(),
     api_key: form.apiKey.trim(),
+    approval_policy: normalizeApprovalPolicy(form.approvalPolicy),
+    sandbox_mode: normalizeSandboxMode(form.sandboxMode),
   };
 }
 
@@ -484,9 +518,11 @@ function normalizePresetList(items: unknown): CodexPreset[] {
       name: toCleanText((item as any)?.name),
       baseUrl: toCleanText((item as any)?.base_url),
       apiKey: toCleanText((item as any)?.api_key),
+      approvalPolicy: normalizeApprovalPolicy((item as any)?.approval_policy),
+      sandboxMode: normalizeSandboxMode((item as any)?.sandbox_mode),
       providerId: toCleanText((item as any)?.provider_id),
     }))
-    .filter((item) => item.name);
+    .filter((item) => item.name && isValidPresetName(item.name));
 }
 
 function normalizeCodexActive(item: any): CodexActive | null {
@@ -498,10 +534,12 @@ function normalizeCodexActive(item: any): CodexActive | null {
   const providerId = toCleanText(item.provider_id);
   const baseUrl = toCleanText(item.base_url);
   const apiKey = toCleanText(item.api_key);
+  const approvalPolicy = normalizeApprovalPolicy(item.approval_policy, "");
+  const sandboxMode = normalizeSandboxMode(item.sandbox_mode, "");
   const configPath = toCleanText(item.config_path);
   const authPath = toCleanText(item.auth_path);
 
-  if (!name && !providerId && !baseUrl && !apiKey && !configPath && !authPath) {
+  if (!name && !providerId && !baseUrl && !apiKey && !approvalPolicy && !sandboxMode && !configPath && !authPath) {
     return null;
   }
 
@@ -510,6 +548,8 @@ function normalizeCodexActive(item: any): CodexActive | null {
     providerId,
     baseUrl,
     apiKey,
+    approvalPolicy,
+    sandboxMode,
     configPath,
     authPath,
   };
@@ -567,6 +607,29 @@ function getErrorMessage(error: unknown) {
     return error.message;
   }
   return String(error || "Unknown error");
+}
+
+function sanitizePresetName(value: string) {
+  return value.replace(/[^A-Za-z0-9_-]/g, "");
+}
+
+function isValidPresetName(value: string) {
+  const normalized = sanitizePresetName(value).trim();
+  return Boolean(normalized) && normalized === value.trim() && PRESET_NAME_PATTERN.test(normalized);
+}
+
+function normalizeApprovalPolicy(value: unknown, fallback = DEFAULT_APPROVAL_POLICY) {
+  const normalized = toCleanText(value);
+  return CODEX_APPROVAL_POLICY_OPTIONS.includes(normalized as (typeof CODEX_APPROVAL_POLICY_OPTIONS)[number])
+    ? normalized
+    : fallback;
+}
+
+function normalizeSandboxMode(value: unknown, fallback = DEFAULT_SANDBOX_MODE) {
+  const normalized = toCleanText(value);
+  return CODEX_SANDBOX_MODE_OPTIONS.includes(normalized as (typeof CODEX_SANDBOX_MODE_OPTIONS)[number])
+    ? normalized
+    : fallback;
 }
 
 function toCleanText(value: unknown) {

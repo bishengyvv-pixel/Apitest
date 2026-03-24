@@ -9,6 +9,13 @@
 - 模型列表是否正常返回
 - 文本与多模态请求是否能稳定跑通
 
+> **新增重点**
+>
+> - **兼容 Linux / Windows 双端**
+> - **Web 页面已加入 Codex 运行设置**
+> - **可直接配置 Codex 执行命令时是否跳过审批**
+> - **可直接配置 Codex 的目录写入权限范围**
+
 项目当前保留两种使用方式：
 
 - `Web`：本地启动一个简洁的测试页面
@@ -16,9 +23,9 @@
 
 ## Preview
 
-![AI API Tester Web Preview](./docs/assets/web-preview.png)
-
-Web 界面预览，建议优先展示左侧导航、测试卡片和响应区域。
+![AI API Tester Web Preview](./docs/assets/web-preview1.png)
+![AI API Tester Web Preview](./docs/assets/web-preview2.png)
+![AI API Tester Web Preview](./docs/assets/web-preview3.png)
 
 ## Quick Start
 
@@ -49,6 +56,8 @@ uv run python main.py stats
 - 上手快：开箱即可验证文本、多模态、模型列表
 - 结构清晰：项目按分层依赖规范组织，便于继续扩展
 - 双模式：适合手动测试，也适合脚本化调用
+- 跨平台：兼容 `Linux / Windows`
+- Codex 友好：可在 Web 页直接管理 `approval_policy` 与 `sandbox_mode`
 
 ## Web Mode
 
@@ -59,6 +68,19 @@ Web 页面主要面向“连通性验证”和“快速回归”。
 - `baseurl`
 - `apikey`
 - `模型列表`
+
+现在连接页还支持直接配置 Codex 运行策略：
+
+- `approval_policy`：是否让 Codex 执行命令时跳过审批提示
+- `sandbox_mode`：控制 Codex 可写目录范围，例如 `workspace-write` 或 `danger-full-access`
+
+也就是说，你可以在页面里直接完成：
+
+1. 测试接口是否可用
+2. 保存 Codex 预设
+3. 配置 Codex 是否需要命令审批
+4. 配置 Codex 的目录权限范围
+5. 一键写入用户的 `.codex/config.toml`
 
 页面内置了两类测试动作：
 

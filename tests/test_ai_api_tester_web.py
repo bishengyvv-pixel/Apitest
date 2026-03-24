@@ -29,12 +29,31 @@ class WebServiceTests(unittest.TestCase):
     def test_extract_codex_preset_requires_name_base_url_and_api_key(self):
         """Codex 预设应要求名称与连接信息完整。"""
         preset = extract_codex_preset(
-            {"name": " HK Node ", "base_url": " https://example.com/v1 ", "api_key": " test-key "}
+            {"name": " HK-Node ", "base_url": " https://example.com/v1 ", "api_key": " test-key ", "approval_policy": "never", "sandbox_mode": "workspace-write"}
         )
 
-        self.assertEqual(preset["name"], "HK Node")
+        self.assertEqual(preset["name"], "HK-Node")
         self.assertEqual(preset["base_url"], "https://example.com/v1")
         self.assertEqual(preset["api_key"], "test-key")
+        self.assertEqual(preset["approval_policy"], "never")
+        self.assertEqual(preset["sandbox_mode"], "workspace-write")
+
+    def test_extract_codex_preset_rejects_invalid_name_characters(self):
+        with self.assertRaisesRegex(ValueError, "Preset name only supports"):
+            extract_codex_preset(
+                {"name": "HK Node", "base_url": "https://example.com/v1", "api_key": "test-key"}
+            )
+
+    def test_extract_codex_preset_rejects_invalid_approval_policy(self):
+        with self.assertRaisesRegex(ValueError, "approval_policy"):
+            extract_codex_preset(
+                {
+                    "name": "HK-Node",
+                    "base_url": "https://example.com/v1",
+                    "api_key": "test-key",
+                    "approval_policy": "always",
+                }
+            )
 
     @patch("packages.ai_api_tester_web.product.impl.service.load_codex_active_settings")
     @patch("packages.ai_api_tester_web.product.impl.service.load_codex_presets")

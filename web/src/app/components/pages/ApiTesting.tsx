@@ -71,7 +71,7 @@ export function ApiTesting() {
           >
             <div className="flex items-center gap-2 text-slate-700">
               <Layers3 className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-semibold tracking-[-0.02em]">{t("currentConnection")}</span>
+              <span className="text-base font-semibold tracking-[-0.02em]">{t("currentConnection")}</span>
             </div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <label className="flex flex-col gap-2">
@@ -182,7 +182,7 @@ export function ApiTesting() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm uppercase tracking-[0.22em] text-slate-400">{t("defaultText")}</p>
-                <h2 className="[font-family:var(--font-display)] mt-2 text-2xl font-semibold tracking-[-0.04em] text-slate-800">{t("verifyTextEndpoint")}</h2>
+                <h2 className="[font-family:var(--font-display)] mt-2 text-[1.35rem] font-semibold tracking-[-0.04em] text-slate-800 md:text-[1.75rem]">{t("verifyTextEndpoint")}</h2>
               </div>
               <motion.button
                 onClick={() => void sendDefaultRequest("text")}
@@ -207,7 +207,7 @@ export function ApiTesting() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm uppercase tracking-[0.22em] text-slate-400">{t("defaultVision")}</p>
-                <h2 className="[font-family:var(--font-display)] mt-2 text-2xl font-semibold tracking-[-0.04em] text-slate-800">{t("verifyVisionEndpoint")}</h2>
+                <h2 className="[font-family:var(--font-display)] mt-2 text-[1.35rem] font-semibold tracking-[-0.04em] text-slate-800 md:text-[1.75rem]">{t("verifyVisionEndpoint")}</h2>
               </div>
               <motion.button
                 onClick={() => void sendDefaultRequest("vision")}
@@ -251,7 +251,7 @@ export function ApiTesting() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm uppercase tracking-[0.22em] text-slate-400">{t("latestResult")}</p>
-              <h2 className="[font-family:var(--font-display)] mt-2 text-2xl font-semibold tracking-[-0.04em] text-slate-800">{t("mostRecentResponse")}</h2>
+              <h2 className="[font-family:var(--font-display)] mt-2 text-[1.35rem] font-semibold tracking-[-0.04em] text-slate-800 md:text-[1.75rem]">{t("mostRecentResponse")}</h2>
             </div>
             <div className="rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-xs font-semibold text-slate-500">
               {result ? (result.kind === "vision" ? t("vision") : t("text")) : t("idle")}
